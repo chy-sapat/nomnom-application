@@ -32,7 +32,7 @@ const SearchBar = ({
 
   return (
     <View className="flex gap-4">
-      <View className="h-fit flex flex-row gap-2 items-center border border-black-200 bg-white rounded-xl px-2">
+      <View className="h-fit flex flex-row gap-2 items-center bg-white rounded-xl px-2">
         <Image source={icons.search} className="size-6" tintColor={"#666876"} />
         <TextInput
           ref={searchBarRef}

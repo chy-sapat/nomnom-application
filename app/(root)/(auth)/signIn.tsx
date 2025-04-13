@@ -16,9 +16,10 @@ import axiosInstance from "@/utils/axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import { useColorScheme } from "nativewind";
+import { useSignIn } from "@clerk/clerk-expo";
 
 type FormData = {
-  username: string;
+  emailUsername: string;
   password: string;
 };
 const SignIn = () => {
@@ -27,6 +28,8 @@ const SignIn = () => {
     handleSubmit,
     formState: { errors },
   } = useForm<FormData>();
+
+  const { signIn, setActive, isLoaded } = useSignIn();
   const { colorScheme } = useColorScheme();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -37,12 +40,16 @@ const SignIn = () => {
   const onSubmit: SubmitHandler<FormData> = async (data) => {
     setLoading(true);
     Keyboard.dismiss();
+    if (!isLoaded) return;
     try {
-      const response = await axiosInstance.post("/user/login", data);
-      console.log(response.data);
-      // await AsyncStorage.setItem("token", response.data.token);
-      // await AsyncStorage.setItem("userId", response.data.userId);
-      router.replace("/");
+      const signInAttempt = await signIn.create({
+        identifier: data.emailUsername,
+        password: data.password,
+      });
+      if (signInAttempt.status === "complete") {
+        await setActive({ session: signInAttempt.createdSessionId });
+        router.replace("/");
+      }
     } catch (error: any) {
       Alert.alert(`${error.message}. Please try again later!`);
     } finally {
@@ -74,7 +81,7 @@ const SignIn = () => {
           {/* Username*/}
           <View>
             <Text className="font-rubik text-lg text-black-100 ml-2">
-              Username
+              Username/Email
             </Text>
             <Controller
               control={control}
@@ -92,12 +99,12 @@ const SignIn = () => {
                   autoCapitalize="none"
                 />
               )}
-              name="username"
+              name="emailUsername"
             />
 
-            {errors.username?.message && (
+            {errors.emailUsername?.message && (
               <Text className="font-rubik text-red-500 mt-1">
-                {errors.username.message as string}
+                {errors.emailUsername.message as string}
               </Text>
             )}
           </View>

@@ -11,7 +11,6 @@ import {
   RefreshControl,
 } from "react-native";
 import icons from "@/constants/icons";
-import images from "@/constants/images";
 import { recipes } from "@/constants/data";
 import CardGroup from "@/components/CardGroup";
 import { useColorScheme } from "nativewind";

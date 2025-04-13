@@ -15,6 +15,7 @@ import backArrow from "@/assets/icons/back-arrow.png";
 import minus from "@/assets/icons/minus.png";
 import clock from "@/assets/icons/clock.png";
 import people from "@/assets/icons/group.png";
+import darkModeToggle from "@/assets/icons/darkModeToggle.png";
 
 export default {
   ShowPassword,
@@ -33,5 +34,6 @@ export default {
   backArrow,
   minus,
   clock,
-  people
+  people,
+  darkModeToggle
 };

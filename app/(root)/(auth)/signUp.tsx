@@ -11,13 +11,16 @@ import {
   Keyboard,
   Dimensions,
 } from "react-native";
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, router } from "expo-router";
 import icons from "@/constants/icons";
 import { Controller, SubmitHandler, useForm } from "react-hook-form";
 import { useAuth, useSignUp } from "@clerk/clerk-expo";
 import axiosInstance from "@/utils/axios";
 import { useColorScheme } from "nativewind";
+import { useSSO } from "@clerk/clerk-expo";
+import * as AuthSession from "expo-auth-session";
+import * as WebBrowser from "expo-web-browser";
 
 interface UserData {
   fullName: string;
@@ -38,6 +41,7 @@ const SignUp = () => {
     formState: { errors },
   } = useForm<FormData>();
 
+  const { startSSOFlow } = useSSO();
   const { isLoaded, signUp, setActive } = useSignUp();
   const { getToken } = useAuth();
   const { colorScheme } = useColorScheme();
@@ -122,11 +126,35 @@ const SignUp = () => {
     }
   };
 
+  const googleSignIn = useCallback(async () => {
+    try {
+      const { createdSessionId, setActive, signIn, signUp } =
+        await startSSOFlow({
+          strategy: "oauth_google",
+          redirectUrl: AuthSession.makeRedirectUri(),
+        });
+
+      if (createdSessionId) {
+        setActive!({ session: createdSessionId });
+      } else {
+      }
+    } catch (error) {
+      console.log(JSON.stringify(error, null, 2));
+    }
+  }, []);
+
+  useEffect(() => {
+    void WebBrowser.warmUpAsync();
+    return () => {
+      void WebBrowser.coolDownAsync();
+    };
+  }, []);
+
   if (pendingVerification) {
     return (
       <SafeAreaView className="w-full h-full bg-white dark:bg-black-300 relative">
         <TouchableOpacity
-          className="w-fit bg-black-100/20 absolute top-4 left-4 p-2 rounded-full dark:bg-white/20"
+          className="w-fit  absolute top-4 left-4 p-2 rounded-full bg-white"
           onPress={() => setPendingVerification(false)}
         >
           <Image
@@ -166,12 +194,12 @@ const SignUp = () => {
   return (
     <SafeAreaView className="relative">
       <TouchableOpacity
-        className="w-fit absolute top-4 left-4 p-2 z-50 rounded-full bg-white/20"
+        className="w-fit absolute top-4 left-4 p-2 z-50 rounded-full bg-white/90"
         onPress={() => router.back()}
       >
         <Image
           source={icons.backArrow}
-          tintColor={colorScheme === "light" ? "#666876" : "#ffffff"}
+          tintColor={colorScheme === "light" ? "#191d31" : "#ffffff"}
           className="size-8"
         />
       </TouchableOpacity>
@@ -386,13 +414,16 @@ const SignUp = () => {
         </View>
         <View className="flex items-center gap-4 px-12">
           <Text className="font-rubik-light text-black-100 text-lg">Or</Text>
-          <TouchableOpacity className="flex flex-row gap-2 w-full justify-center items-center border border-black-200 py-3 rounded-[12px]">
-            <Image className="size-6" source={icons.googleIcon} />
+          <TouchableOpacity
+            onPress={googleSignIn}
+            className="flex flex-row gap-2 w-full justify-center items-center border border-black-200 py-3 rounded-[12px]"
+          >
+            <Image className="size-7" source={icons.googleIcon} />
             <Text className="font-rubik-medium text-black-200 text-lg">
               Continue with Google
             </Text>
           </TouchableOpacity>
-          <Text className="font-rubik text-lg text-black-100 mt-4">
+          <Text className="font-rubik text-xl text-black-100 mt-4">
             Already have an acccout?{" "}
             <Link href="/signIn" className="underline">
               Sign In

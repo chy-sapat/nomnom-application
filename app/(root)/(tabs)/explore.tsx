@@ -12,7 +12,7 @@ const Explore = () => {
 
   return (
     <SafeAreaView className="w-full h-full bg-white dark:bg-black-300">
-      <View className="px-6 py-16 bg-primary-100 rounded-b-3xl">
+      <View className="px-4 py-16 bg-primary-100 rounded-b-3xl">
         <SearchBar
           autoFocus={from === "index"}
           showFilterIcon={true}

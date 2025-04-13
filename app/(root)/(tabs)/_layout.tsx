@@ -2,21 +2,39 @@ import { Tabs } from "expo-router";
 import { Image, Text, View } from "react-native";
 import icons from "@/constants/icons";
 import { colorScheme, useColorScheme } from "nativewind";
+import { useUser } from "@clerk/clerk-expo";
 
-const TabIcon = ({ focused, icon }: { focused: boolean; icon: any }) => {
+const TabIcon = ({
+  focused,
+  icon,
+  title,
+}: {
+  focused: boolean;
+  icon: any;
+  title: string;
+}) => {
+  const { user, isSignedIn } = useUser();
   return (
     <View>
-      <Image
-        source={icon}
-        tintColor={`${focused ? "#E55934" : "#d9d9d9"}`}
-        className="size-7"
-      />
+      {isSignedIn && title == "profile" ? (
+        <Image
+          source={{ uri: user.imageUrl }}
+          className="size-9 rounded-full"
+        />
+      ) : (
+        <Image
+          source={icon}
+          tintColor={`${focused ? "#E55934" : "#d9d9d9"}`}
+          className="size-7"
+        />
+      )}
     </View>
   );
 };
 
 const TabsLayout = () => {
   const { colorScheme } = useColorScheme();
+  const { user, isSignedIn } = useUser();
   return (
     <Tabs
       screenOptions={{
@@ -41,7 +59,7 @@ const TabsLayout = () => {
           title: "Home",
           headerShown: false,
           tabBarIcon: ({ focused }) => (
-            <TabIcon focused={focused} icon={icons.home} />
+            <TabIcon title="home" focused={focused} icon={icons.home} />
           ),
         }}
       />
@@ -51,7 +69,7 @@ const TabsLayout = () => {
           title: "Explore",
           headerShown: false,
           tabBarIcon: ({ focused }) => (
-            <TabIcon focused={focused} icon={icons.search} />
+            <TabIcon title="explore" focused={focused} icon={icons.search} />
           ),
         }}
       />
@@ -61,7 +79,7 @@ const TabsLayout = () => {
           title: "Saved",
           headerShown: false,
           tabBarIcon: ({ focused }) => (
-            <TabIcon focused={focused} icon={icons.save} />
+            <TabIcon title="save" focused={focused} icon={icons.save} />
           ),
         }}
       />
@@ -72,7 +90,7 @@ const TabsLayout = () => {
           title: "Profile",
           headerShown: false,
           tabBarIcon: ({ focused }) => (
-            <TabIcon focused={focused} icon={icons.profile} />
+            <TabIcon title="profile" focused={focused} icon={icons.profile} />
           ),
         }}
       />
