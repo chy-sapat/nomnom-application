@@ -27,29 +27,35 @@ export default function Index() {
     }, 2000);
   }, []);
   return (
-    <SafeAreaView className="w-full h-full bg-white dark:bg-black-300">
-      <View className="w-full h-full px-4">
-        <View className="flex gap-9 py-8">
+    <SafeAreaView className="w-full h-full bg-white dark:bg-black-300 relative">
+      <TouchableOpacity
+        className="bg-primary-100 z-50 absolute bottom-3 right-3 p-4 rounded-full"
+        onPress={() => router.push("/recipes/create")}
+      >
+        <Image source={icons.plus} className="size-8" tintColor="#ffffff" />
+      </TouchableOpacity>
+      <View className="w-full h-full">
+        <View className="flex gap-9 px-4 py-8 rounded-b-3xl bg-primary-100">
           <View className="flex flex-row items-center justify-between">
             <View className="flex gap-1 items-start justify-center">
-              <Text className="font-rubik-bold text-black-300 text-3xl dark:text-white">
+              <Text className="font-rubik-bold text-3xl text-white">
                 Good Morning
               </Text>
-              <Text className="font-rubik text-black-300 dark:text-white">
-                Sapat Chaudhary
-              </Text>
+              <Text className="font-rubik  text-white">Sapat Chaudhary</Text>
             </View>
             <TouchableOpacity>
               <Image
                 source={icons.notification}
                 className="size-8"
-                tintColor={colorScheme === "light" ? "#191d31" : "#ffffff"}
+                tintColor="#ffffff"
               />
             </TouchableOpacity>
           </View>
           <TouchableOpacity
-            className="w-full px-2 py-3 border border-black-200 rounded-xl flex flex-row justify-start items-center gap-2 dark:bg-black-300"
-            onPress={() => router.push("/explore")}
+            className="w-full px-2 py-3  rounded-xl flex flex-row justify-start items-center gap-2 bg-white"
+            onPress={() =>
+              router.push({ pathname: "/explore", params: { from: "index" } })
+            }
           >
             <Image
               source={icons.search}
@@ -62,7 +68,7 @@ export default function Index() {
           </TouchableOpacity>
         </View>
         <ScrollView
-          className="w-full"
+          className="w-full px-4 mt-2"
           contentContainerStyle={{
             rowGap: 8,
           }}

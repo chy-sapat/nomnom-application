@@ -14,9 +14,9 @@ interface props {
 
 const Card = ({ id, title, author, image, avgRating }: props) => {
   return (
-    <View key={id} className="w-[180px] mt-4">
+    <View key={id} className="w-[180px]">
       <TouchableOpacity
-        className="flex items-start relative bg-white rounded-[10px] mr-4 shadow-card overflow-hidden"
+        className="flex items-start relative bg-white rounded-[10px] mr-4 shadow-card overflow-hidden dark:bg-black-200"
         onPress={() => {
           router.push(`/recipe/${id}`);
         }}
@@ -27,19 +27,25 @@ const Card = ({ id, title, author, image, avgRating }: props) => {
           resizeMode="cover"
         />
         <View className="flex flex-row items-center gap-1 px-1 py-0.5 bg-white/90 rounded-full absolute top-2 right-2">
-          <Image source={icons.star} className="size-5"></Image>
+          <Image
+            source={icons.star}
+            className="size-5"
+            tintColor="#ffDE21"
+          ></Image>
           <Text className="text-lg font-rubik-medium text-black-200">
             {avgRating}
           </Text>
         </View>
-        <View className="p-[8px]">
+        <View className="flex gap-2 p-2">
           <Text
-            className="font-rubik-semibold text-lg text-black-200 mb-[5px]"
+            className="font-rubik-semibold text-lg text-black-200 mb-[5px] dark:text-white"
             numberOfLines={1}
           >
             {title}
           </Text>
-          <Text className="font-rubik text-sm text-black-200">{author}</Text>
+          <Text className="font-rubik text-sm text-black-200 dark:text-white">
+            {author}
+          </Text>
         </View>
       </TouchableOpacity>
     </View>

@@ -9,7 +9,7 @@ const TabIcon = ({ focused, icon }: { focused: boolean; icon: any }) => {
       <Image
         source={icon}
         tintColor={`${focused ? "#E55934" : "#d9d9d9"}`}
-        className="size-6"
+        className="size-7"
       />
     </View>
   );
@@ -28,8 +28,9 @@ const TabsLayout = () => {
           alignItems: "center",
         },
         tabBarStyle: {
+          height: 48,
           backgroundColor: colorScheme === "light" ? "#ffffff" : "#191d31",
-          paddingBlock: 16,
+          paddingBlock: 24,
         },
         tabBarHideOnKeyboard: true,
       }}
@@ -54,17 +55,6 @@ const TabsLayout = () => {
           ),
         }}
       />
-      <Tabs.Screen
-        name="create"
-        options={{
-          title: "Create",
-          headerShown: false,
-          tabBarIcon: ({ focused }) => (
-            <TabIcon focused={focused} icon={icons.plus} />
-          ),
-        }}
-      />
-
       <Tabs.Screen
         name="saved"
         options={{

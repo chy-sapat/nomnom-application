@@ -24,6 +24,7 @@ export default function RootLayout() {
   return (
     <>
       <MenuProvider>
+        <StatusBar backgroundColor={"#e55934"} />
         <ClerkProvider tokenCache={tokenCache}>
           <Stack screenOptions={{ headerShown: false }} />
         </ClerkProvider>

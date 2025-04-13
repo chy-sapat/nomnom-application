@@ -92,7 +92,7 @@ const SignIn = () => {
                   autoCapitalize="none"
                 />
               )}
-              name="username" 
+              name="username"
             />
 
             {errors.username?.message && (
@@ -161,7 +161,7 @@ const SignIn = () => {
             )}
           </TouchableOpacity>
           {/* Forget Password*/}
-          <Link href={"/auth/forgotPassword"}>
+          <Link href="/forgotPassword">
             <Text className="font-rubik text-black-100 text-lg">
               Forgot Password?
             </Text>
@@ -187,7 +187,7 @@ const SignIn = () => {
         <Text className="font-rubik text-black-200">
           Don't Have An Account?
         </Text>
-        <Link href={"/auth/signUp"}>
+        <Link href="/signUp">
           <Text className="font-rubik text-black-200">Sign Up</Text>
         </Link>
       </View>
