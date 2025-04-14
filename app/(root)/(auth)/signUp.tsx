@@ -10,6 +10,7 @@ import {
   Alert,
   Keyboard,
   Dimensions,
+  ActivityIndicator,
 } from "react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, router } from "expo-router";
@@ -60,6 +61,8 @@ const SignUp = () => {
   const [retypedPassword, setRetypedPassword] = useState("");
   const [retypedPasswordError, setRetypedPasswordError] = useState(false);
 
+  const [isLoading, setIsLoading] = useState(false);
+
   const screenHeight = Dimensions.get("screen").height;
 
   const onSubmit: SubmitHandler<FormData> = async (data) => {
@@ -67,6 +70,7 @@ const SignUp = () => {
       setRetypedPasswordError(true);
       return;
     }
+    setIsLoading(true);
     if (!isLoaded) return;
     try {
       await signUp.create({
@@ -89,10 +93,13 @@ const SignUp = () => {
         error.errors?.[0]?.longMessage ||
           "Something went wrong. Please try again later"
       );
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const onVerifyPress = async () => {
+    setIsLoading(true);
     Keyboard.dismiss();
     if (!isLoaded) return;
     try {
@@ -115,7 +122,10 @@ const SignUp = () => {
             },
           }
         );
-        if (response.status == 201) router.replace("/");
+        if (response.status == 201) {
+          setIsLoading(false);
+          router.replace("/");
+        }
       }
     } catch (error: any) {
       console.log(error.errors?.[0]);
@@ -123,10 +133,13 @@ const SignUp = () => {
         "Verification Error",
         error.errors?.[0]?.longMessage || "Something went wrong"
       );
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const googleSignIn = useCallback(async () => {
+    setIsLoading(true);
     try {
       const { createdSessionId, setActive, signIn, signUp } =
         await startSSOFlow({
@@ -140,6 +153,8 @@ const SignUp = () => {
       }
     } catch (error) {
       console.log(JSON.stringify(error, null, 2));
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
@@ -159,7 +174,7 @@ const SignUp = () => {
         >
           <Image
             source={icons.backArrow}
-            tintColor={colorScheme === "light" ? "#666876" : "#ffffff"}
+            tintColor={colorScheme === "light" ? "#ffffff" : "#191d31"}
             className="size-8"
           />
         </TouchableOpacity>
@@ -184,7 +199,13 @@ const SignUp = () => {
             onPress={onVerifyPress}
             className="flex items-center w-full border border-primary-100 px-10 py-3 mt-8 rounded-[10px] bg-primary-100"
           >
-            <Text className="font-rubik-medium text-white text-lg">Verify</Text>
+            {isLoading ? (
+              <ActivityIndicator size="small" color="#ffffff" />
+            ) : (
+              <Text className="font-rubik-medium text-white text-lg">
+                Verify
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -199,7 +220,7 @@ const SignUp = () => {
       >
         <Image
           source={icons.backArrow}
-          tintColor={colorScheme === "light" ? "#191d31" : "#ffffff"}
+          tintColor="#191d31"
           className="size-8"
         />
       </TouchableOpacity>
@@ -218,7 +239,7 @@ const SignUp = () => {
           </Text>
         </View>
         <View className="flex gap-4 p-8">
-          <Text className="font-rubik-semibold mb-4 text-black-300 text-2xl dark:text-white">
+          <Text className="font-rubik-semibold mb-4 text-center text-black-300 text-3xl dark:text-white">
             Sign Up
           </Text>
           <View className="flex flex-row gap-4">
@@ -292,7 +313,13 @@ const SignUp = () => {
             </Text>
             <Controller
               control={control}
-              rules={{ required: "Email is required" }}
+              rules={{
+                required: "Email is required",
+                pattern: {
+                  value: /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,4}$/,
+                  message: "Invalid email address",
+                },
+              }}
               render={({ field: { onChange, onBlur, value } }) => (
                 <TextInput
                   ref={emailRef}
@@ -325,7 +352,13 @@ const SignUp = () => {
             <View className="relative">
               <Controller
                 control={control}
-                rules={{ required: "Password is required" }}
+                rules={{
+                  required: "Password is required",
+                  minLength: {
+                    value: 6,
+                    message: "Password must be at least 6 characters long",
+                  },
+                }}
                 render={({ field: { onChange, onBlur, value } }) => (
                   <TextInput
                     ref={passwordRef}
@@ -409,7 +442,11 @@ const SignUp = () => {
             className="flex items-center w-full border border-primary-100 px-10 py-3 rounded-[10px] bg-primary-100 "
             onPress={handleSubmit(onSubmit)}
           >
-            <Text className="font-rubik-medium text-white">Sign up</Text>
+            {isLoading ? (
+              <ActivityIndicator size="small" color="#ffffff" />
+            ) : (
+              <Text className="font-rubik-medium text-white">Sign up</Text>
+            )}
           </TouchableOpacity>
         </View>
         <View className="flex items-center gap-4 px-12">

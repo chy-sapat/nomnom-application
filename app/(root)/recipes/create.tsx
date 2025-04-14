@@ -17,13 +17,13 @@ import {
   MenuTrigger,
 } from "react-native-popup-menu";
 import { Picker } from "@react-native-picker/picker";
+import * as ImagePicker from "expo-image-picker";
 import { colorScheme } from "nativewind";
-import { DarkTheme } from "@react-navigation/native";
-import { useColorScheme } from 'react-native';
+import { useColorScheme } from "react-native";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import axios from "axios";
 import axiosInstance from "@/utils/axios";
-
+import { router } from "expo-router";
 
 type RecipeCreateData = {
   title: string;
@@ -39,18 +39,16 @@ const Create = () => {
   } = useForm<RecipeCreateData>();
 
   const colorScheme = useColorScheme();
-  const darkColor = colorScheme === 'dark' ? '#ffffff' : '#666876';
-
+  const darkColor = colorScheme === "dark" ? "#ffffff" : "#666876";
 
   const titleRef = useRef<TextInput | null>(null);
   const descriptionRef = useRef<TextInput | null>(null);
+
+  const [image, setImage] = useState(null);
+  const [imageUrl, setImageUrl] = useState("");
   const [ingredients, setIngredients] = useState<Array<string>>(["", "", ""]);
   const [directions, setDirections] = useState<Array<string>>(["", "", ""]);
   const [difficulty, setDifficulty] = useState();
-
-  const addIngredients = () => {
-    setIngredients([...ingredients, ""]);
-  };
 
   const addIngredientsBelow = (index: number) => {
     const newIngredients = [...ingredients];
@@ -58,10 +56,22 @@ const Create = () => {
     setIngredients(newIngredients);
   };
 
+  const addDirectionBelow = (index: number) => {
+    const newDirections = [...directions];
+    newDirections.splice(index + 1, 0, "");
+    setDirections(newDirections);
+  };
+
   const updateIngredients = (ingredient: string, index: number) => {
     const newIngredients = [...ingredients];
     newIngredients[index] = ingredient;
     setIngredients(newIngredients);
+  };
+
+  const updateDirections = (direction: string, index: number) => {
+    const newDirections = [...directions];
+    newDirections[index] = direction;
+    setDirections(newDirections);
   };
 
   const removeIngredients = (index: number) => {
@@ -71,24 +81,82 @@ const Create = () => {
     }
   };
 
-  const onSubmit:SubmitHandler<RecipeCreateData> = (data) => {
-      console.log(data);
+  const removeDirection = (index: number) => {
+    if (directions.length > 1) {
+      const newDirections = directions.filter((_, i) => i !== index);
+      setDirections(newDirections);
+    }
+  };
+
+  const pickImageAsync = async () => {
+    if (imageUrl) return;
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      console.log(result);
+      setImageUrl(result.assets[0].uri);
+    }
+  };
+
+  const onSubmit: SubmitHandler<RecipeCreateData> = (data) => {
+    console.log(data);
   };
   return (
-    <SafeAreaView className="w-full h-full px-6 py-8 bg-white dark:bg-black-300">
+    <SafeAreaView className="w-full h-full bg-white dark:bg-black-300 relative">
+      <TouchableOpacity
+        className="w-fit bg-white/50 absolute top-4 left-4 p-2 rounded-full z-50 "
+        onPress={() => router.back()}
+      >
+        <Image
+          source={icons.backArrow}
+          tintColor="#191d31"
+          className="size-8"
+        />
+      </TouchableOpacity>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <Text className="font-rubik-bold text-black-200 text-3xl dark:text-white">
-          Create a new recipe
-        </Text>
-        <View className="flex gap-12 mt-6">
+        <View className="bg-primary-100 pt-8 pb-4">
+          <Text className="font-rubik-bold text-center text-black-200 text-3xl dark:text-white">
+            Create a new recipe
+          </Text>
+        </View>
+        <View className="flex gap-12 px-6 pb-12 mt-6">
           {/* Upload Image Section */}
-          <TouchableOpacity className="w-full h-60 flex justify-center items-center bg-black-100 rounded-2xl dark:bg-white">
-            <Image
-              source={icons.uploadImg}
-              className="size-10"
-              tintColor="#666876"
-            />
-            <Text className="font-rubik text-black-200">Add images</Text>
+          <TouchableOpacity
+            onPress={pickImageAsync}
+            className="w-full h-[250px] flex justify-center items-center bg-black-100 rounded-2xl dark:bg-white relative overflow-hidden"
+          >
+            {imageUrl ? (
+              <>
+                <Image
+                  source={{ uri: imageUrl }}
+                  className="w-full h-full"
+                  resizeMode="contain"
+                />
+                <TouchableOpacity
+                  className="p-2 rounded-full absolute top-2 right-2 bg-white/50"
+                  onPress={() => setImageUrl("")}
+                >
+                  <Image
+                    source={icons.close}
+                    tintColor="#191d31"
+                    className="size-6"
+                  />
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Image
+                  source={icons.uploadImg}
+                  className="size-10"
+                  tintColor="#666876"
+                />
+                <Text className="font-rubik text-black-200">Add images</Text>
+              </>
+            )}
           </TouchableOpacity>
           <View className="flex gap-2">
             <Text className="ml-2 font-rubik-medium text-black-200 text-xl dark:text-white">
@@ -98,58 +166,57 @@ const Create = () => {
               control={control}
               rules={{ required: "title is required" }}
               render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                ref={titleRef}
-                className="border rounded-2xl border-black-100 px-4 text-black-200 dark:text-white"
-                placeholder="My best ever pea soup"
-                onBlur={onBlur}
-                onChangeText={onChange}
-                value={value}
-                placeholderTextColor={darkColor}
-                returnKeyType="next"
-                onSubmitEditing={() => descriptionRef.current?.focus()}
-                submitBehavior="submit"
-              />
+                <TextInput
+                  ref={titleRef}
+                  className="border rounded-2xl border-black-100 px-4 text-black-200 dark:text-white"
+                  placeholder="My best ever pea soup"
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  value={value}
+                  placeholderTextColor={darkColor}
+                  returnKeyType="next"
+                  onSubmitEditing={() => descriptionRef.current?.focus()}
+                  submitBehavior="submit"
+                />
               )}
-              name="title" 
+              name="title"
             />
             {errors.title?.message && (
-                <Text className="font-rubik text-red-500 mt-1">
-                  {errors.title.message as string}
-                </Text>
-              )}
+              <Text className="font-rubik text-red-500 mt-1">
+                {errors.title.message as string}
+              </Text>
+            )}
           </View>
           <View className="flex gap-2">
-            <Text className="ml-2 font-rubik-medium text-black-200 text-2xl dark:text-white">
+            <Text className="ml-2 font-rubik-medium text-black-200 text-xl dark:text-white">
               DESCRIPTION
             </Text>
             <Controller
               control={control}
               render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                ref={descriptionRef}
-                className="min-h-[100px] border rounded-2xl border-black-100 px-4 align-top text-black-200 font-rubik dark:text-white"
-                onBlur={onBlur}
-                onChangeText={onChange}
-                value={value}
-                placeholder="Write something about the recipe..."
-                placeholderTextColor={darkColor}
-                numberOfLines={4}
-                multiline
-              />
+                <TextInput
+                  ref={descriptionRef}
+                  className="min-h-[100px] border rounded-2xl border-black-100 px-4 align-top text-black-200 font-rubik dark:text-white"
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  value={value}
+                  placeholder="Write something about the recipe..."
+                  placeholderTextColor={darkColor}
+                  numberOfLines={4}
+                  multiline
+                />
               )}
-              name="description"  
+              name="description"
             />
             {errors.description?.message && (
-                <Text className="font-rubik text-red-500 mt-1">
-                  {errors.description.message as string}
-                </Text>
-              )}
-            
+              <Text className="font-rubik text-red-500 mt-1">
+                {errors.description.message as string}
+              </Text>
+            )}
           </View>
           {/* Ingredient Seciton */}
           <View className="flex gap-8">
-            <Text className="ml-2 font-rubik-medium text-black-200 text-2xl dark:text-white">
+            <Text className="ml-2 font-rubik-medium text-black-200 text-xl dark:text-white">
               INGREDIENTS
             </Text>
             <View className="flex gap-2">
@@ -230,7 +297,7 @@ const Create = () => {
               </TouchableOpacity>
               <TouchableOpacity
                 className="p-2 flex flex-row gap-2 items-center"
-                onPress={addIngredients}
+                onPress={() => setIngredients([...ingredients, ""])}
               >
                 <Image
                   source={icons.plus}
@@ -245,7 +312,7 @@ const Create = () => {
           </View>
           {/* Directions section */}
           <View className="flex gap-8">
-            <Text className="ml-2 font-rubik-medium text-black-200 text-2xl dark:text-white">
+            <Text className="ml-2 font-rubik-medium text-black-200 text-xl dark:text-white">
               DIRECTIONS
             </Text>
             <View className="flex gap-4">
@@ -255,8 +322,9 @@ const Create = () => {
                     {index + 1}
                   </Text>
                   <TextInput
-                    className="min-h-[100px] flex-1 border rounded-2xl border-black-100 px-4 text-black-200 font-rubik align-top dark:text-white"
-                    numberOfLines={3}
+                    className="min-h-[80px] flex-1 border rounded-2xl border-black-100 px-4 text-black-200 font-rubik align-top dark:text-white"
+                    onChangeText={(text) => updateDirections(text, index)}
+                    numberOfLines={2}
                     multiline
                   />
                   <Menu>
@@ -290,7 +358,7 @@ const Create = () => {
                             padding: 8,
                           },
                         }}
-                        onSelect={() => {}}
+                        onSelect={() => addDirectionBelow(index)}
                       >
                         <Text className="font-rubik text-black-200 text-lg">
                           Add Step
@@ -303,7 +371,7 @@ const Create = () => {
                             padding: 8,
                           },
                         }}
-                        onSelect={() => {}}
+                        onSelect={() => removeDirection(index)}
                         disabled={direction.length == 1}
                       >
                         <Text className="font-rubik text-black-200 text-lg">
@@ -316,18 +384,23 @@ const Create = () => {
               ))}
             </View>
             <View className="flex flex-row justify-center items-center">
-              <TouchableOpacity className="p-2 flex flex-row gap-2 items-center">
+              <TouchableOpacity
+                className="p-2 flex flex-row gap-2 items-center"
+                onPress={() => setDirections([...directions, ""])}
+              >
                 <Image
                   source={icons.plus}
                   className="size-5"
                   tintColor={darkColor}
                 />
-                <Text className="font-rubik text-black-200 text-xl dark:text-white">Steps</Text>
+                <Text className="font-rubik text-black-200 text-xl dark:text-white">
+                  Steps
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
           {/* Cooking Time Section */}
-          <View className="flex flex-row justify-between items-center">
+          {/* <View className="flex flex-row justify-between items-center">
             <Text className="ml-2 font-rubik-medium  text-black-200 text-2xl dark:text-white">
               COOKING TIME
             </Text>
@@ -336,27 +409,29 @@ const Create = () => {
                 Set Cooking Time
               </Text>
             </TouchableOpacity>
-          </View>
+          </View> */}
           {/* Serving Section */}
           <View className="flex flex-row gap-2 items-center">
-            <Text className="ml-2 font-rubik-medium text-black-200 text-2xl dark:text-white">
+            <Text className="ml-2 font-rubik-medium text-black-200 text-xl dark:text-white">
               SERVINGS
             </Text>
             <TextInput
-              className="min-w-12 ml-auto border rounded-2xl border-black-100 px-4 text-black-200 font-rubik dark:text-white"
+              className="min-w-12 ml-auto mr-5 border rounded-2xl border-black-100 px-4 text-black-200 font-rubik dark:text-white"
               inputMode="numeric"
             />
-            <Text className="font-rubik text-black-200 text-lg dark:text-white">person</Text>
+            <Text className="font-rubik text-black-200 text-lg dark:text-white">
+              person
+            </Text>
           </View>
           {/* Difficulty Section */}
           <View>
-            <Text className="ml-2 font-rubik-medium text-black-200 text-2xl dark:text-white">
+            <Text className="ml-2 font-rubik-medium text-black-200 text-xl dark:text-white">
               DIFFICULTY
             </Text>
             <Picker
               selectedValue={difficulty}
               onValueChange={(item, index) => setDifficulty(item)}
-              style={{color:darkColor}}
+              style={{ color: darkColor }}
             >
               <Picker.Item label="Beginner" value="Beginner" />
               <Picker.Item label="Intermediate" value="Intermediate" />
@@ -365,27 +440,26 @@ const Create = () => {
           </View>
           {/* Labels Section */}
           <View className="flex gap-4">
-            <Text className="ml-2 font-rubik-medium text-black-200 text-2xl dark:text-white">
+            <Text className="ml-2 font-rubik-medium text-black-200 text-xl dark:text-white">
               LABELS
             </Text>
             <Controller
               control={control}
               render={({ field: { onChange, onBlur, value } }) => (
-                <TextInput 
+                <TextInput
                   className="border rounded-2xl border-black-100 px-4 text-black-200 font-rubik dark:text-white "
                   onBlur={onBlur}
                   onChangeText={onChange}
                   value={value}
                 />
-                
               )}
-              name="label" 
+              name="label"
             />
             {errors.label?.message && (
-                <Text className="font-rubik text-red-500 mt-1">
-                  {errors.label.message as string}
-                </Text>
-              )}
+              <Text className="font-rubik text-red-500 mt-1">
+                {errors.label.message as string}
+              </Text>
+            )}
             <View></View>
           </View>
           <TouchableOpacity

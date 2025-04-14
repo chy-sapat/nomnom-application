@@ -14,10 +14,14 @@ import icons from "@/constants/icons";
 import { recipes } from "@/constants/data";
 import CardGroup from "@/components/CardGroup";
 import { useColorScheme } from "nativewind";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { SignedIn, useUser } from "@clerk/clerk-expo";
 
 export default function Index() {
   const { colorScheme } = useColorScheme();
+  const { user } = useUser();
+
+  const timeHour = new Date().getHours();
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -28,7 +32,7 @@ export default function Index() {
   return (
     <SafeAreaView className="w-full h-full bg-white dark:bg-black-300 relative">
       <TouchableOpacity
-        className="bg-primary-100 z-50 absolute bottom-3 right-3 p-4 rounded-full"
+        className="bg-primary-100 z-50 absolute bottom-3 right-4 p-4 rounded-full"
         onPress={() => router.push("/recipes/create")}
       >
         <Image source={icons.plus} className="size-8" tintColor="#ffffff" />
@@ -38,9 +42,16 @@ export default function Index() {
           <View className="flex flex-row items-center justify-between">
             <View className="flex gap-1 items-start justify-center">
               <Text className="font-rubik-bold text-3xl text-white">
-                Good Morning
+                Good{" "}
+                {timeHour >= 6 && timeHour <= 12
+                  ? "Morning"
+                  : timeHour > 12 && timeHour <= 18
+                  ? "Afternoon"
+                  : "Evening"}
               </Text>
-              <Text className="font-rubik  text-white">Sapat Chaudhary</Text>
+              <SignedIn>
+                <Text className="font-rubik  text-white">{user?.fullName}</Text>
+              </SignedIn>
             </View>
             <TouchableOpacity>
               <Image
@@ -78,8 +89,10 @@ export default function Index() {
         >
           <CardGroup title="Top Breakfast Recipes" data={recipes} />
           <CardGroup title="Popular Recipes" data={recipes} />
-          <CardGroup title="Recommended For You" data={recipes} />
           <CardGroup title="Latest Recipes" data={recipes} />
+          <SignedIn>
+            <CardGroup title="Recommended For You" data={recipes} />
+          </SignedIn>
         </ScrollView>
       </View>
     </SafeAreaView>
