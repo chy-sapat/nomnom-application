@@ -4,21 +4,13 @@ import icons from "@/constants/icons";
 import images from "@/constants/images";
 import { router } from "expo-router";
 
-interface props {
-  id: number;
-  title: string;
-  author: string;
-  image?: string;
-  avgRating: number;
-}
-
-const Card = ({ id, title, author, image, avgRating }: props) => {
+const Card = (recipe: RecipeCard) => {
   return (
-    <View key={id} className="w-[180px]">
+    <View key={recipe._id} className="w-[180px]">
       <TouchableOpacity
         className="flex items-start relative bg-white rounded-[10px] mr-4 shadow-card overflow-hidden dark:bg-black-200"
         onPress={() => {
-          router.push(`/recipe/${id}`);
+          router.push(`/recipe/${recipe._id}`);
         }}
       >
         <Image
@@ -33,7 +25,7 @@ const Card = ({ id, title, author, image, avgRating }: props) => {
             tintColor="#ffDE21"
           ></Image>
           <Text className="text-lg font-rubik-medium text-black-200">
-            {avgRating}
+            {recipe.avgRating}
           </Text>
         </View>
         <View className="flex gap-2 p-2">
@@ -41,10 +33,10 @@ const Card = ({ id, title, author, image, avgRating }: props) => {
             className="font-rubik-semibold text-lg text-black-200 mb-[5px] dark:text-white"
             numberOfLines={1}
           >
-            {title}
+            {recipe.title}
           </Text>
           <Text className="font-rubik text-sm text-black-200 dark:text-white">
-            {author}
+            {recipe.author}
           </Text>
         </View>
       </TouchableOpacity>

@@ -20,19 +20,8 @@ import { Link } from "expo-router";
 
 const Saved = () => {
   const { isSignedIn } = useUser();
-  const [savedRecipes, setSavedRecipes] = useState(recipes);
+  const [savedRecipes, setSavedRecipes] = useState<Array<RecipeCard>>([]);
   const { userData } = useUserStore();
-
-  useEffect(() => {
-    const FetchSavedRecipe = async () => {
-      try {
-        const response = await axios.get(
-          `http:192.168.1.71:3000/api/v1/recipe/fetchSaved/${userData?._id}`
-        );
-        if (response.status == 200) setSavedRecipes(response.data);
-      } catch (error) {}
-    };
-  }, []);
   return (
     <SafeAreaView className="flex bg-white w-full h-full dark:bg-black-300">
       <View className="flex gap-8 px-4 py-12 rounded-b-3xl bg-primary-100">
@@ -43,9 +32,9 @@ const Saved = () => {
       </View>
       {isSignedIn ? (
         <FlatList
-          data={[]}
-          renderItem={({ item }) => <Card {...item} />}
-          keyExtractor={(item) => item.id.toString()}
+          data={savedRecipes}
+          renderItem={({ item }) => <Card recipe={item} />}
+          keyExtractor={(item) => item._id.toString()}
           numColumns={2}
           showsVerticalScrollIndicator={false}
           bounces={true}

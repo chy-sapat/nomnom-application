@@ -18,7 +18,6 @@ import { useColorScheme } from "nativewind";
 import { useCallback, useEffect, useState } from "react";
 import { SignedIn, useUser, useAuth } from "@clerk/clerk-expo";
 import { useUserStore } from "@/zustand/store";
-import axiosInstance from "@/utils/axios";
 
 export default function Index() {
   const { colorScheme } = useColorScheme();

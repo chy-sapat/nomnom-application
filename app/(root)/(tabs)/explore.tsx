@@ -23,7 +23,7 @@ const Explore = () => {
         <FlatList
           data={recipes}
           renderItem={({ item }) => <Card {...item} />}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(item) => item._id}
           numColumns={2}
           showsVerticalScrollIndicator={false}
           bounces={true}

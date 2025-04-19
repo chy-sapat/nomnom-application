@@ -26,10 +26,6 @@ const SearchBar = ({
   const searchBarRef = useRef<TextInput | null>(null);
   const [showFilters, setShowFilters] = useState(false);
 
-  useEffect(() => {
-    if (autoFocus) searchBarRef.current?.focus();
-  }, []);
-
   return (
     <View className="flex gap-4">
       <View className="h-fit flex flex-row gap-2 items-center bg-white rounded-xl px-2">

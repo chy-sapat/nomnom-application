@@ -21,7 +21,7 @@ const Profile = () => {
   const { colorScheme, toggleColorScheme } = useColorScheme();
   const { isSignedIn, signOut, getToken } = useAuth();
   const { user } = useUser();
-  const { userData, loading, error, setUser, clearUser } = useUserStore();
+  const { userData, setUser, clearUser } = useUserStore();
 
   const onSignOut = () => {
     console.log("SIGNOUT: " + user?.fullName);
@@ -51,13 +51,7 @@ const Profile = () => {
     isSignedIn && userData == null && fetchUserData();
   }, []);
 
-  if (loading) {
-    return (
-      <SafeAreaView className="w-full h-full flex justify-center items-center">
-        <ActivityIndicator size="large" />
-      </SafeAreaView>
-    );
-  } else if (!isSignedIn) {
+  if (!isSignedIn) {
     return (
       <SafeAreaView className="w-full h-full px-[3rem] py-[2rem] flex items-center bg-white justify-center gap-2 dark:bg-black-300">
         <Text className="font-rubik-medium text-black-100 text-lg text-center">

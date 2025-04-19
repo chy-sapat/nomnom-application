@@ -31,7 +31,6 @@ import { useAuth } from "@clerk/clerk-expo";
 import { useUserStore } from "@/zustand/store";
 import { TimerPickerModal } from "react-native-timer-picker";
 import { LinearGradient } from "expo-linear-gradient";
-import { cid } from "@/utils/cloudinary";
 import { getMimeType } from "@/utils/mimeType";
 
 type RecipeCreateData = {

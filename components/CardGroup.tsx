@@ -7,7 +7,7 @@ import Card from "./Card";
 
 interface cardGroup {
   title: string;
-  data: any;
+  data: Array<RecipeCard>;
 }
 
 const CardGroup = ({ title, data }: cardGroup) => {
@@ -26,7 +26,7 @@ const CardGroup = ({ title, data }: cardGroup) => {
       <FlatList
         data={data.slice(0, 5)}
         renderItem={({ item }) => <Card {...item} />}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item) => item._id.toString()}
         bounces={true}
         showsHorizontalScrollIndicator={false}
         contentContainerClassName="py-2"
