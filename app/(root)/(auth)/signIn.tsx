@@ -9,6 +9,7 @@ import {
   Keyboard,
   Dimensions,
   ScrollView,
+  ToastAndroid,
 } from "react-native";
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -18,7 +19,7 @@ import * as WebBrowser from "expo-web-browser";
 import * as AuthSession from "expo-auth-session";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import { useColorScheme } from "nativewind";
-import { useSignIn } from "@clerk/clerk-expo";
+import { useSignIn, useAuth } from "@clerk/clerk-expo";
 import { useSSO } from "@clerk/clerk-expo";
 
 type FormData = {
@@ -36,6 +37,7 @@ const SignIn = () => {
 
   const screenHeight = Dimensions.get("screen").height;
 
+  const { getToken } = useAuth();
   const { signIn, setActive, isLoaded } = useSignIn();
   const { colorScheme } = useColorScheme();
   const [showPassword, setShowPassword] = useState(false);
@@ -50,12 +52,13 @@ const SignIn = () => {
     if (!isLoaded) return;
     try {
       const signInAttempt = await signIn.create({
-        identifier: data.emailUsername,
-        password: data.password,
+        identifier: data.emailUsername.trim(),
+        password: data.password.trim(),
       });
       if (signInAttempt.status === "complete") {
         await setActive({ session: signInAttempt.createdSessionId });
-        router.replace("/");
+        ToastAndroid.show("Signed In Succefully", ToastAndroid.SHORT);
+        router.replace("/profile");
       }
     } catch (error: any) {
       Alert.alert(`${error.message}. Please try again later!`);
@@ -127,7 +130,7 @@ const SignIn = () => {
                 render={({ field: { onChange, onBlur, value } }) => (
                   <TextInput
                     ref={usernameRef}
-                    className="px-3 text-lg text-black-100 border border-black-100 rounded-[10px] dark:bg-black-300"
+                    className="px-3 py-3 text-lg text-black-100 border border-black-100 rounded-[10px] dark:bg-black-300"
                     onBlur={onBlur}
                     onChangeText={onChange}
                     value={value}
@@ -159,7 +162,7 @@ const SignIn = () => {
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
                       ref={passwordRef}
-                      className="px-3 pr-12 text-lg text-black-100 border border-black-100 rounded-[10px]"
+                      className="px-3 py-3 pr-12 text-lg text-black-100 border border-black-100 rounded-[10px]"
                       onBlur={onBlur}
                       onChangeText={onChange}
                       value={value}

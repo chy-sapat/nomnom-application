@@ -1,29 +1,63 @@
-import { View, Text, TouchableOpacity, Image, Switch } from "react-native";
-import React from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  Alert,
+  ActivityIndicator,
+} from "react-native";
+import React, { useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import images from "@/constants/images";
 import { Link, router } from "expo-router";
 import { useColorScheme } from "nativewind";
 import { SignedIn, useAuth, useClerk, useUser } from "@clerk/clerk-expo";
 import icons from "@/constants/icons";
+import axios from "axios";
+import { useUserStore } from "@/zustand/store";
+import axiosInstance from "@/utils/axios";
 
 const Profile = () => {
   const { colorScheme, toggleColorScheme } = useColorScheme();
-  const { isSignedIn, signOut } = useAuth();
+  const { isSignedIn, signOut, getToken } = useAuth();
   const { user } = useUser();
+  const { userData, loading, error, setUser, clearUser } = useUserStore();
 
-  const signOutPressed = async () => {
-    try {
-      await signOut();
-      router.push("/");
-    } catch (error: any) {
-      console.log(error.message);
-    }
+  const onSignOut = () => {
+    console.log("SIGNOUT: " + user?.fullName);
+    signOut();
+    clearUser();
   };
   const handlePress = () => {
     router.push("/signIn");
   };
-  if (!isSignedIn) {
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const token = await getToken();
+        const response = await axiosInstance.get("/user", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+        isSignedIn && setUser(response.data.user);
+      } catch (error: any) {
+        Alert.alert("Error", "An error occured while fetching user data");
+        signOut();
+      }
+    };
+    isSignedIn && userData == null && fetchUserData();
+  }, []);
+
+  if (loading) {
+    return (
+      <SafeAreaView className="w-full h-full flex justify-center items-center">
+        <ActivityIndicator size="large" />
+      </SafeAreaView>
+    );
+  } else if (!isSignedIn) {
     return (
       <SafeAreaView className="w-full h-full px-[3rem] py-[2rem] flex items-center bg-white justify-center gap-2 dark:bg-black-300">
         <Text className="font-rubik-medium text-black-100 text-lg text-center">
@@ -61,7 +95,7 @@ const Profile = () => {
         </Text>
         <TouchableOpacity
           className="w-full py-2 flex items-center border border-red-500 rounded-[10px]"
-          onPress={() => signOut()}
+          onPress={onSignOut}
         >
           <Text className="font-rubik text-lg text-red-500">Sign Out</Text>
         </TouchableOpacity>

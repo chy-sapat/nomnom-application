@@ -5,7 +5,11 @@ import {
   TouchableOpacity,
   TextInput,
   Image,
-  Platform,
+  ToastAndroid,
+  FlatList,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import React, { useRef, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -18,17 +22,21 @@ import {
 } from "react-native-popup-menu";
 import { Picker } from "@react-native-picker/picker";
 import * as ImagePicker from "expo-image-picker";
-import { colorScheme } from "nativewind";
-import { useColorScheme } from "react-native";
+import { useColorScheme } from "nativewind";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import axios from "axios";
 import axiosInstance from "@/utils/axios";
-import { router } from "expo-router";
+import { Redirect, router } from "expo-router";
+import { useAuth } from "@clerk/clerk-expo";
+import { useUserStore } from "@/zustand/store";
+import { TimerPickerModal } from "react-native-timer-picker";
+import { LinearGradient } from "expo-linear-gradient";
+import { cid } from "@/utils/cloudinary";
+import { getMimeType } from "@/utils/mimeType";
 
 type RecipeCreateData = {
   title: string;
   description: string;
-  label: string;
 };
 
 const Create = () => {
@@ -38,17 +46,30 @@ const Create = () => {
     formState: { errors },
   } = useForm<RecipeCreateData>();
 
-  const colorScheme = useColorScheme();
+  const { colorScheme, toggleColorScheme } = useColorScheme();
   const darkColor = colorScheme === "dark" ? "#ffffff" : "#666876";
+
+  const styles = StyleSheet.create({
+    dropDownOptions: {
+      color: "#666876",
+    },
+  });
+
+  const { isSignedIn } = useAuth();
+  const { userData } = useUserStore();
+  const [loading, setLoading] = useState(false);
+  const [showTimer, setShowTimer] = useState(false);
 
   const titleRef = useRef<TextInput | null>(null);
   const descriptionRef = useRef<TextInput | null>(null);
-
-  const [image, setImage] = useState(null);
   const [imageUrl, setImageUrl] = useState("");
-  const [ingredients, setIngredients] = useState<Array<string>>(["", "", ""]);
-  const [directions, setDirections] = useState<Array<string>>(["", "", ""]);
-  const [difficulty, setDifficulty] = useState();
+  const [ingredients, setIngredients] = useState<Array<string>>([""]);
+  const [directions, setDirections] = useState<Array<string>>([""]);
+  const [difficulty, setDifficulty] = useState("Beginner");
+  const [servings, setServings] = useState(1);
+  const [labelText, setLabelText] = useState("");
+  const [labels, setLabels] = useState<Array<string>>([]);
+  const [cookTime, setCookTime] = useState(0);
 
   const addIngredientsBelow = (index: number) => {
     const newIngredients = [...ingredients];
@@ -89,75 +110,162 @@ const Create = () => {
   };
 
   const pickImageAsync = async () => {
-    if (imageUrl) return;
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       allowsEditing: true,
       quality: 1,
+      aspect: [16, 9],
     });
 
     if (!result.canceled) {
-      console.log(result);
       setImageUrl(result.assets[0].uri);
     }
   };
 
-  const onSubmit: SubmitHandler<RecipeCreateData> = (data) => {
-    console.log(data);
+  const handleAddLabel = () => {
+    if (labelText.trim() !== "") {
+      setLabels([...labels, labelText.trim()]);
+      setLabelText("");
+    }
   };
+
+  const handleRemoveLabel = (index: number) => {
+    const newLabels = labels.filter((_, i) => i !== index);
+    setLabels(newLabels);
+  };
+
+  const formatTime = ({
+    hours,
+    minutes,
+  }: {
+    hours?: number;
+    minutes?: number;
+  }) => {
+    return hours! * 60 + minutes!;
+  };
+
+  const onSubmit: SubmitHandler<RecipeCreateData> = async (data) => {
+    setLoading((prevState) => !prevState);
+    try {
+      let finalImageUrl = imageUrl;
+      if (imageUrl) {
+        const mimeType = getMimeType(imageUrl);
+        const formData = new FormData();
+        formData.append("file", {
+          uri: imageUrl,
+          type: mimeType,
+          name: "upload.jpg",
+        } as any);
+        formData.append("upload_preset", "nomnom_preset");
+
+        const res = await axios.post(
+          "https://api.cloudinary.com/v1_1/dlisangy4/upload",
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+        finalImageUrl = res.data.secure_url;
+      }
+      const response = await axiosInstance.post("/recipe/", {
+        title: data.title,
+        description: data.description,
+        ingredients: ingredients,
+        directions: directions,
+        servings: servings,
+        labels: labels,
+        author: userData?._id,
+        cookTime: cookTime,
+        image: imageUrl ? finalImageUrl : "default_recipe_image.jpeg",
+        difficulty,
+      });
+      if (response.status == 201) {
+        ToastAndroid.show(
+          "Recipe saved and published successfully",
+          ToastAndroid.LONG
+        );
+        router.replace("/");
+      }
+    } catch (error: any) {
+      console.log(error);
+      Alert.alert("", "Something went wrong. Please try again later");
+    } finally {
+      setLoading((prevState) => !prevState);
+    }
+  };
+
+  if (!isSignedIn) return <Redirect href={"/profile"} />;
   return (
     <SafeAreaView className="w-full h-full bg-white dark:bg-black-300 relative">
-      <TouchableOpacity
-        className="w-fit bg-white/50 absolute top-4 left-4 p-2 rounded-full z-50 "
-        onPress={() => router.back()}
-      >
-        <Image
-          source={icons.backArrow}
-          tintColor="#191d31"
-          className="size-8"
-        />
-      </TouchableOpacity>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View className="bg-primary-100 pt-8 pb-4">
+          <TouchableOpacity
+            className="w-fit absolute top-4 left-4 p-2 rounded-full z-50 "
+            onPress={() => router.back()}
+          >
+            <Image
+              source={icons.backArrow}
+              tintColor="#ffffff"
+              className="size-10"
+            />
+          </TouchableOpacity>
           <Text className="font-rubik-bold text-center text-black-200 text-3xl dark:text-white">
             Create a new recipe
           </Text>
         </View>
-        <View className="flex gap-12 px-6 pb-12 mt-6">
-          {/* Upload Image Section */}
-          <TouchableOpacity
-            onPress={pickImageAsync}
-            className="w-full h-[250px] flex justify-center items-center bg-black-100 rounded-2xl dark:bg-white relative overflow-hidden"
-          >
-            {imageUrl ? (
-              <>
-                <Image
-                  source={{ uri: imageUrl }}
-                  className="w-full h-full"
-                  resizeMode="contain"
-                />
+        {/* Upload Image Section */}
+        <TouchableOpacity
+          onPress={pickImageAsync}
+          className="w-full min-h-60 flex justify-center items-center gap-2 bg-black-100 dark:bg-white relative overflow-hidden"
+        >
+          {imageUrl ? (
+            <>
+              <Image
+                source={{ uri: imageUrl }}
+                className="w-full aspect-[16/9]"
+                resizeMode="cover"
+              />
+              <View className="absolute bottom-2 right-4">
                 <TouchableOpacity
-                  className="p-2 rounded-full absolute top-2 right-2 bg-white/50"
-                  onPress={() => setImageUrl("")}
+                  className="p-2 bg-black border border-black-200 rounded-full"
+                  onPress={() => {
+                    Alert.alert(
+                      "",
+                      "Are you sure you want to remove this image?",
+                      [
+                        { text: "Cancel" },
+                        {
+                          text: "Remove",
+                          onPress: () => setImageUrl(""),
+                        },
+                      ]
+                    );
+                  }}
                 >
                   <Image
-                    source={icons.close}
-                    tintColor="#191d31"
-                    className="size-6"
+                    source={icons.deleteIcon}
+                    className="size-4"
+                    tintColor="#666876"
                   />
                 </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                <Image
-                  source={icons.uploadImg}
-                  className="size-10"
-                  tintColor="#666876"
-                />
-                <Text className="font-rubik text-black-200">Add images</Text>
-              </>
-            )}
-          </TouchableOpacity>
+              </View>
+            </>
+          ) : (
+            <>
+              <Image
+                source={icons.uploadImg}
+                className="size-10"
+                tintColor="#666876"
+              />
+              <Text className="font-rubik text-black-200 text-xl">
+                Add Image
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
+        <View className="flex gap-12 px-6 pb-12 mt-6">
           <View className="flex gap-2">
             <Text className="ml-2 font-rubik-medium text-black-200 text-xl dark:text-white">
               TITLE
@@ -168,7 +276,7 @@ const Create = () => {
               render={({ field: { onChange, onBlur, value } }) => (
                 <TextInput
                   ref={titleRef}
-                  className="border rounded-2xl border-black-100 px-4 text-black-200 dark:text-white"
+                  className="border rounded-2xl border-black-100 px-3 py-3 text-black-200 dark:text-white"
                   placeholder="My best ever pea soup"
                   onBlur={onBlur}
                   onChangeText={onChange}
@@ -194,17 +302,23 @@ const Create = () => {
             <Controller
               control={control}
               render={({ field: { onChange, onBlur, value } }) => (
-                <TextInput
-                  ref={descriptionRef}
-                  className="min-h-[100px] border rounded-2xl border-black-100 px-4 align-top text-black-200 font-rubik dark:text-white"
-                  onBlur={onBlur}
-                  onChangeText={onChange}
-                  value={value}
-                  placeholder="Write something about the recipe..."
-                  placeholderTextColor={darkColor}
-                  numberOfLines={4}
-                  multiline
-                />
+                <View>
+                  <TextInput
+                    ref={descriptionRef}
+                    className="min-h-[100px] border rounded-2xl border-black-100 px-3 py-3 align-top text-black-200 font-rubik dark:text-white"
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    value={value}
+                    defaultValue=""
+                    placeholder="Write something about the recipe..."
+                    placeholderTextColor={darkColor}
+                    numberOfLines={4}
+                    multiline
+                  />
+                  <Text className="px-4 text-right text-sm text-black-200 dark:text-white">
+                    {value?.length || 0}/200
+                  </Text>
+                </View>
               )}
               name="description"
             />
@@ -219,14 +333,16 @@ const Create = () => {
             <Text className="ml-2 font-rubik-medium text-black-200 text-xl dark:text-white">
               INGREDIENTS
             </Text>
-            <View className="flex gap-2">
+            <View className="flex gap-4">
               {ingredients.map((ingredient, index) => (
                 <View key={index} className="flex flex-row gap-2 items-center">
-                  <TextInput
-                    className="flex-1 border rounded-2xl border-black-100 px-4 text-black-200 font-rubik dark:text-white"
-                    value={ingredient}
-                    onChangeText={(text) => updateIngredients(text, index)}
-                  />
+                  <View className="flex-1 flex gap-2">
+                    <TextInput
+                      className="border rounded-2xl border-black-100 px-3 py-3 text-black-200 font-rubik dark:text-white"
+                      value={ingredient}
+                      onChangeText={(text) => updateIngredients(text, index)}
+                    />
+                  </View>
                   <Menu>
                     <MenuTrigger>
                       <Image
@@ -272,7 +388,7 @@ const Create = () => {
                           },
                         }}
                         onSelect={() => removeIngredients(index)}
-                        disabled={ingredient.length == 1}
+                        disabled={ingredients.length == 1}
                       >
                         <Text className="font-rubik text-black-200 text-lg">
                           Remove Ingredient
@@ -285,16 +401,6 @@ const Create = () => {
             </View>
 
             <View className="flex flex-row gap-4 justify-center items-center">
-              <TouchableOpacity className="p-2 flex flex-row gap-2 items-center">
-                <Image
-                  source={icons.plus}
-                  className="size-5"
-                  tintColor={darkColor}
-                />
-                <Text className="font-rubik text-black-200 text-xl dark:text-white">
-                  Section
-                </Text>
-              </TouchableOpacity>
               <TouchableOpacity
                 className="p-2 flex flex-row gap-2 items-center"
                 onPress={() => setIngredients([...ingredients, ""])}
@@ -322,9 +428,9 @@ const Create = () => {
                     {index + 1}
                   </Text>
                   <TextInput
-                    className="min-h-[80px] flex-1 border rounded-2xl border-black-100 px-4 text-black-200 font-rubik align-top dark:text-white"
+                    className="min-h-[80px] flex-1 border rounded-2xl border-black-100 px-3 py-3 text-black-200 font-rubik align-top dark:text-white"
                     onChangeText={(text) => updateDirections(text, index)}
-                    numberOfLines={2}
+                    numberOfLines={4}
                     multiline
                   />
                   <Menu>
@@ -400,28 +506,87 @@ const Create = () => {
             </View>
           </View>
           {/* Cooking Time Section */}
-          {/* <View className="flex flex-row justify-between items-center">
-            <Text className="ml-2 font-rubik-medium  text-black-200 text-2xl dark:text-white">
+          <View className="flex flex-row justify-between items-center">
+            <Text className="ml-2 font-rubik-medium  text-black-200 text-xl dark:text-white">
               COOKING TIME
             </Text>
-            <TouchableOpacity className="border border-black-100 rounded-[12px] px-10 py-2">
+            <TouchableOpacity
+              className="border border-black-100 rounded-[12px] px-10 py-2"
+              onPress={() => setShowTimer((prevState) => !prevState)}
+            >
               <Text className="font-rubik text-black-200 dark:text-white">
-                Set Cooking Time
+                {cookTime ? cookTime : "Set Cooking Time"}
               </Text>
             </TouchableOpacity>
-          </View> */}
+            <TimerPickerModal
+              visible={showTimer}
+              setIsVisible={setShowTimer}
+              hideSeconds
+              hourLabel="hr"
+              minuteLabel="min"
+              onConfirm={(pickedDuration) => {
+                setCookTime(formatTime(pickedDuration));
+                setShowTimer(false);
+              }}
+              onCancel={() => {
+                setShowTimer(false);
+              }}
+              LinearGradient={LinearGradient}
+              padHoursWithZero
+              secondsPickerIsDisabled
+              styles={{
+                theme: colorScheme,
+                pickerItem: {
+                  fontFamily: "Rubik",
+                },
+                pickerLabel: {
+                  right: -10,
+                },
+              }}
+            />
+          </View>
           {/* Serving Section */}
           <View className="flex flex-row gap-2 items-center">
             <Text className="ml-2 font-rubik-medium text-black-200 text-xl dark:text-white">
               SERVINGS
             </Text>
-            <TextInput
-              className="min-w-12 ml-auto mr-5 border rounded-2xl border-black-100 px-4 text-black-200 font-rubik dark:text-white"
-              inputMode="numeric"
-            />
-            <Text className="font-rubik text-black-200 text-lg dark:text-white">
-              person
-            </Text>
+            <View className="flex flex-row items-center gap-2 ml-auto bg-black-100 p-1 rounded-full">
+              <TouchableOpacity
+                className="size-8 flex justify-center items-center bg-white rounded-full"
+                onPress={() => {
+                  if (servings > 1) {
+                    setServings(servings - 1);
+                  }
+                }}
+              >
+                <Image
+                  source={icons.minus}
+                  className="size-4"
+                  tintColor={"#666876"}
+                />
+              </TouchableOpacity>
+              <TextInput
+                value={servings.toString()}
+                className="font-rubik text-lg text-black-300 align-middle px-3 py-1"
+                inputMode="numeric"
+                maxLength={2}
+                editable={false}
+              />
+              <TouchableOpacity
+                className="size-8 flex justify-center items-center bg-white rounded-full"
+                onPress={() => {
+                  if (servings < 99) {
+                    setServings(servings + 1);
+                  }
+                }}
+              >
+                <Image
+                  source={icons.plus}
+                  className="size-4"
+                  tintColor={"#666876"}
+                />
+              </TouchableOpacity>
+            </View>
           </View>
           {/* Difficulty Section */}
           <View>
@@ -431,11 +596,23 @@ const Create = () => {
             <Picker
               selectedValue={difficulty}
               onValueChange={(item, index) => setDifficulty(item)}
-              style={{ color: darkColor }}
+              dropdownIconColor={"#666876"}
             >
-              <Picker.Item label="Beginner" value="Beginner" />
-              <Picker.Item label="Intermediate" value="Intermediate" />
-              <Picker.Item label="Professional" value="Professional" />
+              <Picker.Item
+                style={styles.dropDownOptions}
+                label="Beginner"
+                value="Beginner"
+              />
+              <Picker.Item
+                style={styles.dropDownOptions}
+                label="Intermediate"
+                value="Intermediate"
+              />
+              <Picker.Item
+                style={styles.dropDownOptions}
+                label="Professional"
+                value="Professional"
+              />
             </Picker>
           </View>
           {/* Labels Section */}
@@ -443,32 +620,49 @@ const Create = () => {
             <Text className="ml-2 font-rubik-medium text-black-200 text-xl dark:text-white">
               LABELS
             </Text>
-            <Controller
-              control={control}
-              render={({ field: { onChange, onBlur, value } }) => (
-                <TextInput
-                  className="border rounded-2xl border-black-100 px-4 text-black-200 font-rubik dark:text-white "
-                  onBlur={onBlur}
-                  onChangeText={onChange}
-                  value={value}
-                />
-              )}
-              name="label"
+            <TextInput
+              className="border rounded-2xl border-black-100 px-3 py-3 text-black-200 font-rubik dark:text-white"
+              value={labelText}
+              onChangeText={(text) => setLabelText(text)}
+              onSubmitEditing={handleAddLabel}
+              returnKeyType="done"
+              submitBehavior="submit"
             />
-            {errors.label?.message && (
-              <Text className="font-rubik text-red-500 mt-1">
-                {errors.label.message as string}
-              </Text>
-            )}
-            <View></View>
+            <View className="w-full flex-row flex-wrap gap-4">
+              {labels.map((label, index) => (
+                <View
+                  key={index}
+                  className="flex flex-row items-center gap-4 border border-black-200 rounded-full self-start p-2.5"
+                >
+                  <Text className="font-rubik text-lg text-black-200">
+                    {label}
+                  </Text>
+                  <TouchableOpacity onPress={() => handleRemoveLabel(index)}>
+                    <Image
+                      source={icons.close}
+                      className="size-4"
+                      tintColor="#666876"
+                    />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
           </View>
           <TouchableOpacity
-            className="flex items-center justify-center bg-primary-100 py-4 rounded-2xl"
+            className={`flex items-center justify-center ${
+              loading ? "bg-primary-100/80" : "bg-primary-100"
+            } py-4 rounded-2xl`}
             onPress={handleSubmit(onSubmit)}
           >
-            <Text className="font-rubik-medium text-white text-xl">
-              Save & Publish
-            </Text>
+            {loading ? (
+              <>
+                <ActivityIndicator size="small" color="#ffffff" />
+              </>
+            ) : (
+              <Text className="font-rubik-medium text-white text-xl">
+                Save & Publish
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>

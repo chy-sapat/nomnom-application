@@ -8,6 +8,11 @@
     "scheme": "nomnom",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "splash": {
+      "Image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#e55934"
+    },
     "updates": {
       "enabled": true
     },
@@ -17,8 +22,9 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      }
+        "backgroundColor": "#e55934"
+      },
+      "package": "com.sapatchy.nomnom"
     },
     "web": {
       "bundler": "metro",
@@ -26,18 +32,23 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router",
       [
-        "expo-splash-screen",
+        "expo-image-picker",
         {
-          "image": "./assets/images/splash.png",
-          "resizeMode": "contain",
-          "backgroundColor": "#e55934"
+          "photosPermission": "The app accesses your photos to let you share them with your friends."
         }
       ]
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "99b66b97-1f0c-490c-8404-ac6795a65300"
+      }
     }
   }
 }

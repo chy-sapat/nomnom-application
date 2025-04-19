@@ -37,7 +37,7 @@ const SearchBar = ({
         <TextInput
           ref={searchBarRef}
           placeholder={placeHolderText}
-          className="flex-1 text-xl"
+          className="flex-1 py-3 text-xl"
         />
         {showFilterIcon && (
           <TouchableOpacity className="p-2">

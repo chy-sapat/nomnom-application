@@ -12,26 +12,28 @@ const Explore = () => {
 
   return (
     <SafeAreaView className="w-full h-full bg-white dark:bg-black-300">
-      <View className="px-4 py-16 bg-primary-100 rounded-b-3xl">
+      <View className="px-4 py-8 bg-primary-100 rounded-b-3xl">
         <SearchBar
           autoFocus={from === "index"}
           showFilterIcon={true}
           onClick={() => {}}
         />
       </View>
-      <FlatList
-        data={recipes}
-        renderItem={({ item }) => <Card {...item} />}
-        keyExtractor={(item) => item.id.toString()}
-        numColumns={2}
-        showsVerticalScrollIndicator={false}
-        bounces={true}
-        contentContainerClassName="w-full flex items-center px-6 py-8"
-        contentContainerStyle={{
-          rowGap: 16,
-          columnGap: 16,
-        }}
-      />
+      <View className="w-full mt-2 pb-32">
+        <FlatList
+          data={recipes}
+          renderItem={({ item }) => <Card {...item} />}
+          keyExtractor={(item) => item.id.toString()}
+          numColumns={2}
+          showsVerticalScrollIndicator={false}
+          bounces={true}
+          contentContainerClassName="flex items-center"
+          contentContainerStyle={{
+            rowGap: 16,
+            columnGap: 16,
+          }}
+        />
+      </View>
     </SafeAreaView>
   );
 };

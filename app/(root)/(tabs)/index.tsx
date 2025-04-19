@@ -9,18 +9,22 @@ import {
   ScrollView,
   FlatList,
   RefreshControl,
+  Alert,
 } from "react-native";
 import icons from "@/constants/icons";
 import { recipes } from "@/constants/data";
 import CardGroup from "@/components/CardGroup";
 import { useColorScheme } from "nativewind";
 import { useCallback, useEffect, useState } from "react";
-import { SignedIn, useUser } from "@clerk/clerk-expo";
+import { SignedIn, useUser, useAuth } from "@clerk/clerk-expo";
+import { useUserStore } from "@/zustand/store";
+import axiosInstance from "@/utils/axios";
 
 export default function Index() {
   const { colorScheme } = useColorScheme();
   const { user } = useUser();
-
+  const { isSignedIn, signOut, getToken } = useAuth();
+  const { userData, setUser } = useUserStore();
   const timeHour = new Date().getHours();
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(() => {
@@ -31,12 +35,14 @@ export default function Index() {
   }, []);
   return (
     <SafeAreaView className="w-full h-full bg-white dark:bg-black-300 relative">
-      <TouchableOpacity
-        className="bg-primary-100 z-50 absolute bottom-3 right-4 p-4 rounded-full"
-        onPress={() => router.push("/recipes/create")}
-      >
-        <Image source={icons.plus} className="size-8" tintColor="#ffffff" />
-      </TouchableOpacity>
+      <SignedIn>
+        <TouchableOpacity
+          className="bg-primary-100 z-50 absolute bottom-3 right-4 p-4 rounded-full"
+          onPress={() => router.push("/recipes/create")}
+        >
+          <Image source={icons.plus} className="size-8" tintColor="#ffffff" />
+        </TouchableOpacity>
+      </SignedIn>
       <View className="w-full h-full">
         <View className="flex gap-9 px-4 py-8 rounded-b-3xl bg-primary-100">
           <View className="flex flex-row items-center justify-between">

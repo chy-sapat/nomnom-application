@@ -13,7 +13,8 @@ import { router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import images from "@/constants/images";
 import icons from "@/constants/icons";
-import { recipe } from "@/constants/data";
+import { recipe, recipes } from "@/constants/data";
+import CardGroup from "@/components/CardGroup";
 
 const Recipe = () => {
   const [loading, setLoading] = useState(true);
@@ -178,6 +179,32 @@ const Recipe = () => {
                     </View>
                   ))}
                 </View>
+                <View className="flex gap-8">
+                  <Text className="font-rubik-medium text-2xl text-black-100">
+                    Directions
+                  </Text>
+                  <View className="flex gap-4">
+                    {recipe.directions.map((item, index) => (
+                      <View
+                        key={index}
+                        className="flex flex-row gap-4 items-center"
+                      >
+                        <Text className="size-12 text-center align-middle font-rubik-medium text-[1rem] bg-black-100 text-white rounded-full">
+                          {index + 1}
+                        </Text>
+                        <Text className="font-rubik text-lg text-black-200">
+                          {item.step}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+                <View>
+                  <Text className="font-rubik-medium text-2xl text-black-100">
+                    Ratings
+                  </Text>
+                </View>
+                <CardGroup title="Recipe Similar to this" data={recipes} />
               </View>
             </View>
           </ScrollView>

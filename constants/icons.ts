@@ -16,7 +16,9 @@ import minus from "@/assets/icons/minus.png";
 import clock from "@/assets/icons/clock.png";
 import people from "@/assets/icons/group.png";
 import darkModeToggle from "@/assets/icons/darkModeToggle.png";
-import close from "@/assets/icons/close.png"
+import close from "@/assets/icons/close.png";
+import edit from "@/assets/icons/edit.png";
+import deleteIcon from "@/assets/icons/delete.png";
 
 export default {
   ShowPassword,
@@ -37,5 +39,7 @@ export default {
   clock,
   people,
   darkModeToggle,
-  close
+  close,
+  edit,
+  deleteIcon
 };

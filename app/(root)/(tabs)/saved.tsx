@@ -6,7 +6,7 @@ import {
   ScrollView,
   FlatList,
 } from "react-native";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Card from "@/components/Card";
 import images from "@/constants/images";
@@ -14,9 +14,25 @@ import { recipes } from "@/constants/data";
 import Explore from "./explore";
 import SearchBar from "@/components/searchBar";
 import { useUser } from "@clerk/clerk-expo";
+import { useUserStore } from "@/zustand/store";
+import axios from "axios";
+import { Link } from "expo-router";
 
 const Saved = () => {
   const { isSignedIn } = useUser();
+  const [savedRecipes, setSavedRecipes] = useState(recipes);
+  const { userData } = useUserStore();
+
+  useEffect(() => {
+    const FetchSavedRecipe = async () => {
+      try {
+        const response = await axios.get(
+          `http:192.168.1.71:3000/api/v1/recipe/fetchSaved/${userData?._id}`
+        );
+        if (response.status == 200) setSavedRecipes(response.data);
+      } catch (error) {}
+    };
+  }, []);
   return (
     <SafeAreaView className="flex bg-white w-full h-full dark:bg-black-300">
       <View className="flex gap-8 px-4 py-12 rounded-b-3xl bg-primary-100">
@@ -27,7 +43,7 @@ const Saved = () => {
       </View>
       {isSignedIn ? (
         <FlatList
-          data={recipes}
+          data={[]}
           renderItem={({ item }) => <Card {...item} />}
           keyExtractor={(item) => item.id.toString()}
           numColumns={2}
@@ -41,7 +57,7 @@ const Saved = () => {
           ListEmptyComponent={
             <View className="flex flex-1 items-center">
               <Text className="font-rubik text-xl dark:text-black-200">
-                Nothing is saved!
+                Nothing is saved
               </Text>
             </View>
           }
@@ -53,14 +69,12 @@ const Saved = () => {
               You are not Signed In
             </Text>
             <Text className="font-rubik text-lg dark:text-black-100">
-              Sign in to view saved recipes
+              <Link href="/signIn" className="underline">
+                Sign in
+              </Link>{" "}
+              to view saved recipes
             </Text>
           </View>
-          <TouchableOpacity className="flex flex-row justify-center w-full border border-primary-100 px-10 py-3 rounded-[10px] bg-primary-100">
-            <Text className="font-rubik-medium text-white text-lg">
-              Sign in
-            </Text>
-          </TouchableOpacity>
         </View>
       )}
     </SafeAreaView>

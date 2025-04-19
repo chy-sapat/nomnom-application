@@ -6,6 +6,7 @@ import { MenuProvider } from "react-native-popup-menu";
 import { useEffect } from "react";
 import { ClerkProvider } from "@clerk/clerk-expo";
 import { tokenCache } from "@clerk/clerk-expo/token-cache";
+import "expo-dev-client";
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
