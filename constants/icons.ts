@@ -19,6 +19,7 @@ import darkModeToggle from "@/assets/icons/darkModeToggle.png";
 import close from "@/assets/icons/close.png";
 import edit from "@/assets/icons/edit.png";
 import deleteIcon from "@/assets/icons/delete.png";
+import layer from "@/assets/icons/layer.png";
 
 export default {
   ShowPassword,
@@ -41,5 +42,6 @@ export default {
   darkModeToggle,
   close,
   edit,
-  deleteIcon
+  deleteIcon,
+  layer
 };

@@ -7,29 +7,47 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import images from "@/constants/images";
 import icons from "@/constants/icons";
-import { recipe, recipes } from "@/constants/data";
+import { recipes } from "@/constants/data";
 import CardGroup from "@/components/CardGroup";
+import axiosInstance from "@/utils/axios";
 
 const Recipe = () => {
   const [loading, setLoading] = useState(true);
-  const [servings, setServings] = useState(1);
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const [recipe, setRecipe] = useState<Recipe | null>(null);
+  // const { id } = useLocalSearchParams<{ id?: string }>();
+  const id = "6803d676e261401df200812c";
   const windowHeight = Dimensions.get("window").height;
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      setLoading(false);
-    }, 2000);
-
-    return () => {
-      clearTimeout(timeout);
+    const fetchRecipe = async () => {
+      setLoading(true);
+      try {
+        const response = await axiosInstance.get(`/recipe/${id}`);
+        setRecipe(response.data);
+        console.log(response.data);
+      } catch (error) {
+        Alert.alert(
+          "",
+          "Something went wrong while fetching the recipe. Please try again later!",
+          [
+            {
+              text: "OK",
+              onPress: () => router.back(),
+            },
+          ]
+        );
+      } finally {
+        setLoading(false);
+      }
     };
+    if (!recipe) fetchRecipe();
   }, []);
 
   return (
@@ -66,35 +84,41 @@ const Recipe = () => {
           </View>
           <ScrollView showsVerticalScrollIndicator={false}>
             <Image
-              source={images.noodles}
-              style={{ height: windowHeight / 2 }}
-              className="w-full"
-              resizeMode="cover"
+              source={{ uri: recipe?.image }}
+              className="w-full aspect-[16/9]"
+              resizeMode="contain"
             />
             <View className="flex gap-8 px-6 py-4">
               {/* Title & Rating */}
               <View className="flex flex-row justify-between items-center">
-                <Text className="font-rubik-bold text-2xl text-black-300 dark:text-white">
-                  {recipe.title}
-                </Text>
-                <View className="flex flex-row items-center gap-2 bg-black-100/80 px-2 rounded-full py-2">
-                  <Image
-                    source={icons.star}
-                    className="size-6"
-                    tintColor={"#FFDE21"}
-                  />
-                  <Text className="font-rubik text-xl">{4.5}</Text>
+                <View>
+                  <Text className="font-rubik-bold text-3xl text-black-300 dark:text-white">
+                    {recipe?.title}
+                  </Text>
+                  <Text className="font-rubik text-lg text-black-200">{`By ${recipe?.author.fullname}`}</Text>
                 </View>
+                {recipe?.averageRating && (
+                  <View className="flex flex-row items-center gap-2 bg-black-100/80 px-2 rounded-full py-2">
+                    <Image
+                      source={icons.star}
+                      className="size-6"
+                      tintColor={"#FFDE21"}
+                    />
+                    <Text className="font-rubik text-xl">
+                      {recipe?.averageRating}
+                    </Text>
+                  </View>
+                )}
               </View>
-              {recipe.description && (
-                <Text className="font-rubik text-lg text-black-200">
+              {recipe?.description && (
+                <Text className="py-4 font-rubik text-xl text-black-200">
                   {recipe.description}
                 </Text>
               )}
               <View className="flex flex-row justify-between">
                 <View>
                   <Text className="font-rubik text-lg text-black-200">
-                    Beginner
+                    {recipe?.difficulty}
                   </Text>
                 </View>
                 <View className="flex flex-row gap-2 items-center">
@@ -104,107 +128,52 @@ const Recipe = () => {
                     tintColor="#666876"
                   />
                   <Text className="font-rubik text-lg text-black-200">
-                    1 hr 30 min
+                    {recipe?.cookTime! / 60 > 1
+                      ? `${Math.round(recipe?.cookTime! / 60)} hr 
+                      ${recipe?.cookTime! % 60} min`
+                      : `${recipe?.cookTime} min`}
                   </Text>
                 </View>
                 <View>
-                  <Text className="font-rubik text-lg text-black-200">
-                    176 cal
-                  </Text>
-                </View>
-              </View>
-              {/* Servings */}
-              <View className="flex flex-row items-center gap-8">
-                <View className="flex flex-row gap-2 items-center">
-                  <Image
-                    source={icons.people}
-                    className="size-5"
-                    tintColor="#666876"
-                  />
-                  <Text className="font-rubik text-xl text-black-200">
-                    Servings
-                  </Text>
-                </View>
-                <View className="flex flex-row items-center gap-2 bg-black-100 p-1 rounded-full">
-                  <TouchableOpacity
-                    className="size-8 flex justify-center items-center bg-white rounded-full"
-                    onPress={() => {
-                      if (servings > 1) {
-                        setServings(servings - 1);
-                      }
-                    }}
-                  >
-                    <Image
-                      source={icons.minus}
-                      className="size-4"
-                      tintColor={"#666876"}
-                    />
-                  </TouchableOpacity>
-                  <TextInput
-                    value={servings.toString()}
-                    onChangeText={(e) => setServings(Number(e))}
-                    className="font-rubik text-lg text-black-300 align-middle px-3 py-1"
-                    inputMode="numeric"
-                    maxLength={2}
-                  />
-                  <TouchableOpacity
-                    className="size-8 flex justify-center items-center bg-white rounded-full"
-                    onPress={() => {
-                      if (servings < 99) {
-                        setServings(servings + 1);
-                      }
-                    }}
-                  >
-                    <Image
-                      source={icons.plus}
-                      className="size-4"
-                      tintColor={"#666876"}
-                    />
-                  </TouchableOpacity>
+                  <Text className="font-rubik text-lg text-black-200">{`${recipe?.servings} serving`}</Text>
                 </View>
               </View>
               <View className="flex gap-8">
-                <Text className="font-rubik-medium text-2xl text-black-100">
+                <Text className="font-rubik-medium text-2xl text-black-100 dark:text-white">
                   Ingredients
                 </Text>
                 <View className="flex gap-4">
-                  {recipe.ingredients.map((item, index) => (
+                  {recipe?.ingredients.map((item, index) => (
                     <View key={index} className="flex flex-row gap-2">
-                      <Text className="font-rubik text-lg text-black-200">
-                        {item.quantity}
-                      </Text>
-                      <Text className="font-rubik text-lg text-black-200">
-                        {item.ingredient}
+                      <Text className="font-rubik text-xl text-black-200">
+                        {item}
                       </Text>
                     </View>
                   ))}
                 </View>
                 <View className="flex gap-8">
-                  <Text className="font-rubik-medium text-2xl text-black-100">
-                    Directions
+                  <Text className="font-rubik-medium text-2xl text-black-100 dark:text-white">
+                    Instructions
                   </Text>
-                  <View className="flex gap-4">
-                    {recipe.directions.map((item, index) => (
-                      <View
-                        key={index}
-                        className="flex flex-row gap-4 items-center"
-                      >
-                        <Text className="size-12 text-center align-middle font-rubik-medium text-[1rem] bg-black-100 text-white rounded-full">
-                          {index + 1}
+                  <View className="flex gap-8">
+                    {recipe?.directions.map((item, index) => (
+                      <View key={index} className="flex gap-4 items-start">
+                        <Text className="px-6 py-2 text-center font-rubik-medium text-lg bg-black-100 text-white rounded-full">
+                          {`Step ${index + 1}`}
                         </Text>
-                        <Text className="font-rubik text-lg text-black-200">
-                          {item.step}
+                        <Text className="font-rubik text-xl text-black-200">
+                          {item}
                         </Text>
                       </View>
                     ))}
                   </View>
                 </View>
                 <View>
-                  <Text className="font-rubik-medium text-2xl text-black-100">
+                  <Text className="font-rubik-medium text-2xl text-black-100 dark:text-white">
                     Ratings
                   </Text>
                 </View>
-                <CardGroup title="Recipe Similar to this" data={recipes} />
+                <CardGroup title="Similar Recipes" data={recipes} />
               </View>
             </View>
           </ScrollView>

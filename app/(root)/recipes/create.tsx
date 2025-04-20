@@ -38,6 +38,11 @@ type RecipeCreateData = {
   description: string;
 };
 
+type RecipeIngrdient = {
+  quantity: string;
+  ingredient: string;
+};
+
 const Create = () => {
   const {
     control,
@@ -62,7 +67,9 @@ const Create = () => {
   const titleRef = useRef<TextInput | null>(null);
   const descriptionRef = useRef<TextInput | null>(null);
   const [imageUrl, setImageUrl] = useState("");
-  const [ingredients, setIngredients] = useState<Array<string>>([""]);
+  const [ingredients, setIngredients] = useState<Array<RecipeIngrdient>>([
+    { quantity: "", ingredient: "" },
+  ]);
   const [directions, setDirections] = useState<Array<string>>([""]);
   const [difficulty, setDifficulty] = useState("Beginner");
   const [servings, setServings] = useState(1);
@@ -72,7 +79,7 @@ const Create = () => {
 
   const addIngredientsBelow = (index: number) => {
     const newIngredients = [...ingredients];
-    newIngredients.splice(index + 1, 0, "");
+    newIngredients.splice(index + 1, 0, { quantity: "", ingredient: "" });
     setIngredients(newIngredients);
   };
 
@@ -82,9 +89,13 @@ const Create = () => {
     setDirections(newDirections);
   };
 
-  const updateIngredients = (ingredient: string, index: number) => {
+  const updateIngredients = (
+    item: string,
+    field: keyof RecipeIngrdient,
+    index: number
+  ) => {
     const newIngredients = [...ingredients];
-    newIngredients[index] = ingredient;
+    newIngredients[index][field] = item;
     setIngredients(newIngredients);
   };
 
@@ -133,6 +144,15 @@ const Create = () => {
     setLabels(newLabels);
   };
 
+  const getCombinedIngredients = () => {
+    const combined = ingredients
+      .map((ingredient) =>
+        `${ingredient.quantity}, ${ingredient.ingredient}`.trim()
+      )
+      .filter((combined) => combined !== "");
+    return combined;
+  };
+
   const formatTime = ({
     hours,
     minutes,
@@ -145,6 +165,15 @@ const Create = () => {
 
   const onSubmit: SubmitHandler<RecipeCreateData> = async (data) => {
     setLoading((prevState) => !prevState);
+    const combined = getCombinedIngredients();
+    if (combined.length === 0) {
+      Alert.alert("", "Add atleast one ingredient");
+      return;
+    }
+    if (directions.length === 1 && directions[0] === "") {
+      Alert.alert("", "Add atleast one directions");
+      return;
+    }
     try {
       let finalImageUrl = imageUrl;
       if (imageUrl) {
@@ -171,7 +200,7 @@ const Create = () => {
       const response = await axiosInstance.post("/recipe/", {
         title: data.title,
         description: data.description,
-        ingredients: ingredients,
+        ingredients: combined,
         directions: directions,
         servings: servings,
         labels: labels,
@@ -335,11 +364,29 @@ const Create = () => {
             <View className="flex gap-4">
               {ingredients.map((ingredient, index) => (
                 <View key={index} className="flex flex-row gap-2 items-center">
-                  <View className="flex-1 flex gap-2">
+                  <View className="flex-1 flex flex-row gap-2 items-center">
+                    <Image
+                      source={icons.layer}
+                      className="size-8"
+                      tintColor={"#666876"}
+                    />
                     <TextInput
-                      className="border rounded-2xl border-black-100 px-3 py-3 text-black-200 font-rubik dark:text-white"
-                      value={ingredient}
-                      onChangeText={(text) => updateIngredients(text, index)}
+                      className="w-24 border rounded-2xl border-black-100 px-3 py-3 text-black-200 font-rubik dark:text-white"
+                      value={ingredient.quantity}
+                      placeholder="1 lt"
+                      placeholderTextColor={"#666876"}
+                      onChangeText={(text) =>
+                        updateIngredients(text, "quantity", index)
+                      }
+                    />
+                    <TextInput
+                      className="flex-1 border rounded-2xl border-black-100 px-3 py-3 text-black-200 font-rubik dark:text-white"
+                      value={ingredient.ingredient}
+                      onChangeText={(text) =>
+                        updateIngredients(text, "ingredient", index)
+                      }
+                      placeholder="water"
+                      placeholderTextColor={"#666876"}
                     />
                   </View>
                   <Menu>
@@ -402,7 +449,12 @@ const Create = () => {
             <View className="flex flex-row gap-4 justify-center items-center">
               <TouchableOpacity
                 className="p-2 flex flex-row gap-2 items-center"
-                onPress={() => setIngredients([...ingredients, ""])}
+                onPress={() =>
+                  setIngredients([
+                    ...ingredients,
+                    { quantity: "", ingredient: "" },
+                  ])
+                }
               >
                 <Image
                   source={icons.plus}
@@ -514,7 +566,9 @@ const Create = () => {
               onPress={() => setShowTimer((prevState) => !prevState)}
             >
               <Text className="font-rubik text-black-200 dark:text-white">
-                {cookTime ? cookTime : "Set Cooking Time"}
+                {cookTime
+                  ? `${Math.round(cookTime / 60)} hr ${cookTime % 60} min`
+                  : "Set Cooking Time"}
               </Text>
             </TouchableOpacity>
             <TimerPickerModal

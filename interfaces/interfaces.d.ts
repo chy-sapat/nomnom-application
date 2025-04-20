@@ -5,7 +5,11 @@ interface Recipe {
     labels: Array<string>
     ingredients: Array<string>
     directions: Array<string>
-    author: string
+    author: {
+        _id: string,
+        fullname: string,
+        username: string,
+    }
     difficulty: string
     servings: number
     cookTime: number
