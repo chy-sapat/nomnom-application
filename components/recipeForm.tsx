@@ -6,7 +6,6 @@ import {
   TextInput,
   Image,
   ToastAndroid,
-  FlatList,
   StyleSheet,
   Alert,
   ActivityIndicator,
@@ -31,7 +30,14 @@ import { useAuth } from "@clerk/clerk-expo";
 import { useUserStore } from "@/zustand/store";
 import { TimerPickerModal } from "react-native-timer-picker";
 import { LinearGradient } from "expo-linear-gradient";
-import { getMimeType } from "@/utils/mimeType";
+
+interface props {
+  loading: boolean;
+  mode: "create" | "edit";
+  formTitle: string;
+  recipeData?: Partial<Recipe> | null;
+  onButtonClick: (data: Partial<Recipe>) => void;
+}
 
 type RecipeCreateData = {
   title: string;
@@ -43,7 +49,13 @@ type RecipeIngrdient = {
   ingredient: string;
 };
 
-const Create = () => {
+const RecipeForm = ({
+  loading,
+  mode = "create",
+  formTitle = "Create New Recipe",
+  recipeData,
+  onButtonClick,
+}: props) => {
   const {
     control,
     handleSubmit,
@@ -60,23 +72,37 @@ const Create = () => {
   });
 
   const { isSignedIn } = useAuth();
-  const { userData } = useUserStore();
-  const [loading, setLoading] = useState(false);
   const [showTimer, setShowTimer] = useState(false);
 
   const titleRef = useRef<TextInput | null>(null);
   const descriptionRef = useRef<TextInput | null>(null);
-  const [imageUrl, setImageUrl] = useState("");
-  const [ingredients, setIngredients] = useState<Array<RecipeIngrdient>>([
-    { quantity: "", ingredient: "" },
-  ]);
-  const [directions, setDirections] = useState<Array<string>>([""]);
-  const [difficulty, setDifficulty] = useState("Beginner");
-  const [servings, setServings] = useState(1);
+  const [imageUrl, setImageUrl] = useState(recipeData?.image || "");
+  const [ingredients, setIngredients] = useState<Array<RecipeIngrdient>>(
+    recipeData
+      ? parseIngredients(recipeData?.ingredients!)
+      : [{ quantity: "", ingredient: "" }]
+  );
+  const [directions, setDirections] = useState<Array<string>>(
+    recipeData?.directions || [""]
+  );
+  const [difficulty, setDifficulty] = useState(
+    recipeData?.difficulty || "Beginner"
+  );
+  const [servings, setServings] = useState(recipeData?.servings || 1);
   const [labelText, setLabelText] = useState("");
-  const [labels, setLabels] = useState<Array<string>>([]);
-  const [cookTime, setCookTime] = useState(0);
+  const [labels, setLabels] = useState<Array<string>>(recipeData?.labels || []);
+  const [cookTime, setCookTime] = useState(recipeData?.cookTime || 0);
 
+  function parseIngredients(
+    raw: string[]
+  ): { quantity: string; ingredient: string }[] {
+    const newIngredients = raw.map((line) => {
+      const [quantity, ingredient] = line.split(",").map((s) => s.trim());
+      return { quantity, ingredient };
+    });
+
+    return newIngredients;
+  }
   const addIngredientsBelow = (index: number) => {
     const newIngredients = [...ingredients];
     newIngredients.splice(index + 1, 0, { quantity: "", ingredient: "" });
@@ -163,8 +189,7 @@ const Create = () => {
     return hours! * 60 + minutes!;
   };
 
-  const onSubmit: SubmitHandler<RecipeCreateData> = async (data) => {
-    setLoading((prevState) => !prevState);
+  const onSubmit: SubmitHandler<RecipeCreateData> = (data) => {
     const combined = getCombinedIngredients();
     if (combined.length === 0) {
       Alert.alert("", "Add atleast one ingredient");
@@ -174,54 +199,17 @@ const Create = () => {
       Alert.alert("", "Add atleast one directions");
       return;
     }
-    try {
-      let finalImageUrl = imageUrl;
-      if (imageUrl) {
-        const mimeType = getMimeType(imageUrl);
-        const formData = new FormData();
-        formData.append("file", {
-          uri: imageUrl,
-          type: mimeType,
-          name: "upload.jpg",
-        } as any);
-        formData.append("upload_preset", "nomnom_preset");
-
-        const res = await axios.post(
-          "https://api.cloudinary.com/v1_1/dlisangy4/upload",
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
-        finalImageUrl = res.data.secure_url;
-      }
-      const response = await axiosInstance.post("/recipe/", {
-        title: data.title,
-        description: data.description,
-        ingredients: combined,
-        directions: directions,
-        servings: servings,
-        labels: labels,
-        author: userData?._id,
-        cookTime: cookTime,
-        image: imageUrl ? finalImageUrl : "default_recipe_image.jpeg",
-        difficulty,
-      });
-      if (response.status == 201) {
-        ToastAndroid.show(
-          "Recipe saved and published successfully",
-          ToastAndroid.LONG
-        );
-        router.replace("/");
-      }
-    } catch (error: any) {
-      console.log(error);
-      Alert.alert("", "Something went wrong. Please try again later");
-    } finally {
-      setLoading((prevState) => !prevState);
-    }
+    onButtonClick({
+      title: data.title,
+      description: data.description,
+      ingredients: combined,
+      directions: directions,
+      servings: servings,
+      labels: labels,
+      cookTime: cookTime,
+      image: imageUrl,
+      difficulty,
+    });
   };
 
   if (!isSignedIn) return <Redirect href={"/profile"} />;
@@ -240,7 +228,7 @@ const Create = () => {
             />
           </TouchableOpacity>
           <Text className="font-rubik-bold text-center text-black-200 text-3xl dark:text-white">
-            Create a new recipe
+            {formTitle}
           </Text>
         </View>
         {/* Upload Image Section */}
@@ -309,6 +297,7 @@ const Create = () => {
                   onBlur={onBlur}
                   onChangeText={onChange}
                   value={value}
+                  defaultValue={recipeData?.title || ""}
                   placeholderTextColor={darkColor}
                   returnKeyType="next"
                   onSubmitEditing={() => descriptionRef.current?.focus()}
@@ -337,7 +326,7 @@ const Create = () => {
                     onBlur={onBlur}
                     onChangeText={onChange}
                     value={value}
-                    defaultValue=""
+                    defaultValue={recipeData?.description || ""}
                     placeholder="Write something about the recipe..."
                     placeholderTextColor={darkColor}
                     numberOfLines={4}
@@ -479,6 +468,7 @@ const Create = () => {
                     {index + 1}
                   </Text>
                   <TextInput
+                    value={direction}
                     className="min-h-[80px] flex-1 border rounded-2xl border-black-100 px-3 py-3 text-black-200 font-rubik align-top dark:text-white"
                     onChangeText={(text) => updateDirections(text, index)}
                     numberOfLines={4}
@@ -559,7 +549,7 @@ const Create = () => {
           {/* Cooking Time Section */}
           <View className="flex flex-row justify-between items-center">
             <Text className="ml-2 font-rubik-medium  text-black-200 text-xl dark:text-white">
-              COOKING TIME
+              TIME
             </Text>
             <TouchableOpacity
               className="border border-black-100 rounded-[12px] px-10 py-2"
@@ -567,7 +557,9 @@ const Create = () => {
             >
               <Text className="font-rubik text-black-200 dark:text-white">
                 {cookTime
-                  ? `${Math.round(cookTime / 60)} hr ${cookTime % 60} min`
+                  ? cookTime / 60 > 1
+                    ? `${Math.floor(cookTime / 60)} hr ${cookTime % 60} min`
+                    : `${cookTime} min`
                   : "Set Cooking Time"}
               </Text>
             </TouchableOpacity>
@@ -713,7 +705,7 @@ const Create = () => {
               </>
             ) : (
               <Text className="font-rubik-medium text-white text-xl">
-                Save & Publish
+                {mode === "create" ? "Save & publish" : "Update"}
               </Text>
             )}
           </TouchableOpacity>
@@ -723,4 +715,4 @@ const Create = () => {
   );
 };
 
-export default Create;
+export default RecipeForm;

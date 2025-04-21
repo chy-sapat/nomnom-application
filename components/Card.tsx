@@ -4,7 +4,7 @@ import icons from "@/constants/icons";
 import images from "@/constants/images";
 import { router } from "expo-router";
 
-const Card = (recipe: RecipeCard) => {
+const Card = (recipe: Partial<Recipe>) => {
   return (
     <View key={recipe._id} className="w-[180px]">
       <TouchableOpacity
@@ -14,7 +14,9 @@ const Card = (recipe: RecipeCard) => {
         }}
       >
         <Image
-          source={images.noodles}
+          source={
+            recipe.image !== "default" ? { uri: recipe.image } : images.noodles
+          }
           className="w-full h-[8rem]"
           resizeMode="cover"
         />
@@ -25,7 +27,7 @@ const Card = (recipe: RecipeCard) => {
             tintColor="#ffDE21"
           ></Image>
           <Text className="text-lg font-rubik-medium text-black-200">
-            {recipe.avgRating}
+            {recipe.averageRating}
           </Text>
         </View>
         <View className="flex gap-2 p-2">
@@ -36,7 +38,7 @@ const Card = (recipe: RecipeCard) => {
             {recipe.title}
           </Text>
           <Text className="font-rubik text-sm text-black-200 dark:text-white">
-            {recipe.author}
+            {recipe.author?.fullname}
           </Text>
         </View>
       </TouchableOpacity>

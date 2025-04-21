@@ -20,7 +20,7 @@ import { Link } from "expo-router";
 
 const Saved = () => {
   const { isSignedIn } = useUser();
-  const [savedRecipes, setSavedRecipes] = useState<Array<RecipeCard>>([]);
+  const [savedRecipes, setSavedRecipes] = useState<Array<Partial<Recipe>>>([]);
   const { userData } = useUserStore();
   return (
     <SafeAreaView className="flex bg-white w-full h-full dark:bg-black-300">
@@ -28,13 +28,17 @@ const Saved = () => {
         <Text className="font-rubik-bold text-3xl text-white">
           Saved Recipe
         </Text>
-        <SearchBar placeHolderText="Search in your saved recipes" />
+        <SearchBar
+          value=""
+          placeHolderText="Search in your saved recipes"
+          onChangeText={() => {}}
+        />
       </View>
       {isSignedIn ? (
         <FlatList
           data={savedRecipes}
-          renderItem={({ item }) => <Card recipe={item} />}
-          keyExtractor={(item) => item._id.toString()}
+          renderItem={({ item }) => <Card {...item} />}
+          keyExtractor={(item) => item._id!.toString()}
           numColumns={2}
           showsVerticalScrollIndicator={false}
           bounces={true}

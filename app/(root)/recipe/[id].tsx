@@ -8,6 +8,7 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
+  ToastAndroid,
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
@@ -17,21 +18,60 @@ import icons from "@/constants/icons";
 import { recipes } from "@/constants/data";
 import CardGroup from "@/components/CardGroup";
 import axiosInstance from "@/utils/axios";
+import { useUserStore } from "@/zustand/store";
+import { useColorScheme } from "nativewind";
+import axios from "axios";
+import { Rating, AirbnbRating } from "@rneui/themed";
 
 const Recipe = () => {
   const [loading, setLoading] = useState(true);
   const [recipe, setRecipe] = useState<Recipe | null>(null);
-  // const { id } = useLocalSearchParams<{ id?: string }>();
-  const id = "6803d676e261401df200812c";
-  const windowHeight = Dimensions.get("window").height;
+  const [similarRecipe, setSimilarRecipe] = useState<Recipe[]>([]);
+  const { userData } = useUserStore();
+  const { colorScheme } = useColorScheme();
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const [rating, setRating] = useState(0);
+  const timeDisplay =
+    recipe?.cookTime! / 60 > 1
+      ? `${Math.floor(recipe?.cookTime! / 60)} hr ${recipe?.cookTime! % 60} min`
+      : `${recipe?.cookTime} min`;
+
+  const deleteRecipe = async () => {
+    setLoading(true);
+    try {
+      const response = await axiosInstance.delete(`/recipe/${id}`);
+      ToastAndroid.show(response.data.message, ToastAndroid.LONG);
+      router.back();
+    } catch (error) {
+      Alert.alert("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  const editRecipe = () => {
+    router.push(`/edit/${id}`);
+  };
+  const saveRecipe = async () => {
+    try {
+      const response = await axiosInstance.post("/recipe/save-recipe", {
+        userId: userData?._id,
+        recipeId: recipe?._id,
+      });
+      if (response.status == 200) {
+        ToastAndroid.show("Recipe saved successfully", ToastAndroid.LONG);
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
 
   useEffect(() => {
     const fetchRecipe = async () => {
       setLoading(true);
       try {
         const response = await axiosInstance.get(`/recipe/${id}`);
-        setRecipe(response.data);
-        console.log(response.data);
+        setRecipe(response.data.recipe);
+        setSimilarRecipe(response.data.similar);
       } catch (error) {
         Alert.alert(
           "",
@@ -58,38 +98,56 @@ const Recipe = () => {
         </SafeAreaView>
       ) : (
         <SafeAreaView className="w-full h-full relative bg-white dark:bg-black-300">
-          {/* back arrow */}
           <TouchableOpacity
             className="absolute top-4 left-4 z-50 bg-white/50 rounded-full p-2"
             onPress={() => router.back()}
           >
             <Image source={icons.backArrow} className="size-8" />
           </TouchableOpacity>
-          {/* Recipe Options */}
-          <View className="absolute top-4 right-4 z-50 flex flex-row gap-2">
-            <TouchableOpacity>
-              <Image
-                source={icons.save}
-                className="size-8"
-                tintColor="#ffffff"
-              />
-            </TouchableOpacity>
-            <TouchableOpacity>
-              <Image
-                source={icons.threeDots}
-                className="size-8"
-                tintColor="#ffffff"
-              />
-            </TouchableOpacity>
+          <View className="absolute top-4 right-4 z-50 flex flex-row gap-4">
+            {recipe?.author._id !== userData?._id ? (
+              <TouchableOpacity onPress={saveRecipe}>
+                <Image
+                  source={icons.save}
+                  className="size-6"
+                  tintColor={colorScheme === "light" ? "#191831" : "#ffffff"}
+                />
+              </TouchableOpacity>
+            ) : (
+              <>
+                <TouchableOpacity onPress={editRecipe}>
+                  <Image
+                    source={icons.edit}
+                    className="size-6"
+                    tintColor={colorScheme === "light" ? "#191831" : "#ffffff"}
+                  />
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={deleteRecipe}>
+                  <Image
+                    source={icons.deleteIcon}
+                    className="size-6"
+                    tintColor={colorScheme === "light" ? "#191831" : "#ffffff"}
+                  />
+                </TouchableOpacity>
+              </>
+            )}
           </View>
           <ScrollView showsVerticalScrollIndicator={false}>
-            <Image
-              source={{ uri: recipe?.image }}
-              className="w-full aspect-[16/9]"
-              resizeMode="contain"
-            />
+            {recipe?.image !== "default_recipe_image.jpeg" ? (
+              <Image
+                source={{ uri: recipe?.image }}
+                className="w-full aspect-[16/9]"
+                resizeMode="contain"
+              />
+            ) : (
+              <Image
+                source={images.noodles}
+                className="w-full aspect=[16/9]"
+                resizeMode="contain"
+              />
+            )}
             <View className="flex gap-8 px-6 py-4">
-              {/* Title & Rating */}
               <View className="flex flex-row justify-between items-center">
                 <View>
                   <Text className="font-rubik-bold text-3xl text-black-300 dark:text-white">
@@ -128,10 +186,7 @@ const Recipe = () => {
                     tintColor="#666876"
                   />
                   <Text className="font-rubik text-lg text-black-200">
-                    {recipe?.cookTime! / 60 > 1
-                      ? `${Math.round(recipe?.cookTime! / 60)} hr 
-                      ${recipe?.cookTime! % 60} min`
-                      : `${recipe?.cookTime} min`}
+                    {timeDisplay}
                   </Text>
                 </View>
                 <View>
@@ -172,8 +227,31 @@ const Recipe = () => {
                   <Text className="font-rubik-medium text-2xl text-black-100 dark:text-white">
                     Ratings
                   </Text>
+                  <View className="flex gap-4">
+                    <Rating
+                      showRating
+                      imageSize={20}
+                      startingValue={rating}
+                      onFinishRating={(rating: number) => setRating(rating)}
+                      style={{
+                        paddingVertical: 10,
+                        backgroundColor: "#191d31",
+                      }}
+                    />
+                    <TextInput
+                      className="min-h-[100px] border rounded-2xl border-black-100 px-3 py-3 align-top text-black-200 font-rubik dark:text-white"
+                      placeholder="What do you think about this recipe?"
+                      placeholderTextColor={"#666876"}
+                    />
+                  </View>
+                  <View className="mt-4">
+                    <Text className="font-rubik text-lg text-black-200 text-center">
+                      No Ratings to show
+                    </Text>
+                  </View>
                 </View>
-                <CardGroup title="Similar Recipes" data={recipes} />
+                <View className="h-[2px] bg-black-200"></View>
+                <CardGroup title="Similar Recipes" data={similarRecipe} />
               </View>
             </View>
           </ScrollView>

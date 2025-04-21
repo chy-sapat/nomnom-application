@@ -11,17 +11,18 @@ import React, { useEffect, useRef, useState } from "react";
 import { router } from "expo-router";
 
 interface props {
+  value: string;
   autoFocus?: boolean;
   showFilterIcon?: boolean;
   placeHolderText?: string;
-  onClick?: () => void;
+  onChangeText: (text: string) => void;
 }
 
 const SearchBar = ({
-  autoFocus,
+  value,
+  onChangeText,
   showFilterIcon = false,
   placeHolderText = "What do you want to cook today?",
-  onClick,
 }: props) => {
   const searchBarRef = useRef<TextInput | null>(null);
   const [showFilters, setShowFilters] = useState(false);
@@ -34,6 +35,8 @@ const SearchBar = ({
           ref={searchBarRef}
           placeholder={placeHolderText}
           className="flex-1 py-3 text-xl"
+          value={value}
+          onChangeText={(text) => onChangeText(text)}
         />
         {showFilterIcon && (
           <TouchableOpacity className="p-2">

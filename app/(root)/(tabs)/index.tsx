@@ -10,6 +10,7 @@ import {
   FlatList,
   RefreshControl,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import icons from "@/constants/icons";
 import { recipes } from "@/constants/data";
@@ -17,27 +18,44 @@ import CardGroup from "@/components/CardGroup";
 import { useColorScheme } from "nativewind";
 import { useCallback, useEffect, useState } from "react";
 import { SignedIn, useUser, useAuth } from "@clerk/clerk-expo";
-import { useUserStore } from "@/zustand/store";
+import { useRecipeStore, useUserStore } from "@/zustand/store";
+import axios from "axios";
+import axiosInstance from "@/utils/axios";
 
 export default function Index() {
   const { colorScheme } = useColorScheme();
   const { user } = useUser();
-  const { isSignedIn, signOut, getToken } = useAuth();
-  const { userData, setUser } = useUserStore();
+  const { latestRecipe, setLatestRecipe } = useRecipeStore();
   const timeHour = new Date().getHours();
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(false);
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     setTimeout(() => {
       setRefreshing(false);
     }, 2000);
   }, []);
+
+  useEffect(() => {
+    const fetchLatestRecipes = async () => {
+      setLoading(true);
+      try {
+        const response = await axiosInstance.get("/recipe?latest=true");
+        setLatestRecipe(response.data);
+      } catch (error) {
+        console.log(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (latestRecipe.length === 0) fetchLatestRecipes();
+  }, []);
   return (
     <SafeAreaView className="w-full h-full bg-white dark:bg-black-300 relative">
       <SignedIn>
         <TouchableOpacity
           className="bg-primary-100 z-50 absolute bottom-3 right-4 p-4 rounded-full"
-          onPress={() => router.push("/recipes/create")}
+          onPress={() => router.push("/create/create")}
         >
           <Image source={icons.plus} className="size-8" tintColor="#ffffff" />
         </TouchableOpacity>
@@ -92,12 +110,31 @@ export default function Index() {
           }
           showsVerticalScrollIndicator={false}
         >
-          <CardGroup title="Top Breakfast Recipes" data={recipes} />
-          <CardGroup title="Popular Recipes" data={recipes} />
-          <CardGroup title="Latest Recipes" data={recipes} />
-          <SignedIn>
-            <CardGroup title="Recommended For You" data={recipes} />
-          </SignedIn>
+          {loading ? (
+            <ActivityIndicator size="large" />
+          ) : (
+            <>
+              <CardGroup
+                title="Top Breakfast Recipes"
+                data={recipes.slice(0, 5)}
+              />
+              <CardGroup title="Popular Recipes" data={recipes.slice(0, 5)} />
+              <CardGroup
+                title="Latest Recipes"
+                data={
+                  latestRecipe.length > 5
+                    ? latestRecipe.slice(0, 5)
+                    : latestRecipe
+                }
+              />
+              <SignedIn>
+                <CardGroup
+                  title="Recommended For You"
+                  data={recipes.slice(0, 5)}
+                />
+              </SignedIn>
+            </>
+          )}
         </ScrollView>
       </View>
     </SafeAreaView>
