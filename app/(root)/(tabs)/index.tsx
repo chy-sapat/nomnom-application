@@ -109,6 +109,7 @@ export default function Index() {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
           showsVerticalScrollIndicator={false}
+          scrollsToTop={true}
         >
           {loading ? (
             <ActivityIndicator size="large" />

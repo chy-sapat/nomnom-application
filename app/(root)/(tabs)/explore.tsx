@@ -6,6 +6,7 @@ import Card from "@/components/Card";
 import axios from "axios";
 import { useDebounce } from "@/hooks/useDebounce";
 import axiosInstance from "@/utils/axios";
+import { router } from "expo-router";
 
 const Explore = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -33,35 +34,34 @@ const Explore = () => {
 
   return (
     <SafeAreaView className="w-full h-full bg-white dark:bg-black-300">
-      <View className="px-4 py-8 bg-primary-100 rounded-b-3xl">
+      <View className="flex gap-8 px-4 py-8 bg-primary-100 rounded-b-3xl">
+        <Text className="font-rubik-bold text-3xl text-white">
+          Search Recipes
+        </Text>
         <SearchBar
           value={searchQuery}
           onChangeText={(text) => setSearchQuery(text)}
         />
       </View>
       <View className="w-full mt-2 pb-32">
-        <FlatList
-          data={recipes}
-          renderItem={({ item }) => <Card {...item} />}
-          keyExtractor={(item) => item._id!}
-          numColumns={2}
-          showsVerticalScrollIndicator={false}
-          bounces={true}
-          contentContainerClassName="flex items-center"
-          contentContainerStyle={{
-            rowGap: 16,
-            columnGap: 16,
-          }}
-          ListEmptyComponent={
-            <View className="flex flex-1 items-center">
-              {
-                <Text className="font-rubik text-xl dark:text-black-200">
-                  Search for something
-                </Text>
-              }
+        {recipes.length == 0 && searchQuery.length == 0 ? (
+          <View className="flex items-center justify-center h-full">
+            <Text className="font-rubik text-black-100 text-lg">
+              Search for recipes
+            </Text>
+          </View>
+        ) : (
+          <View className="flex gap-4 px-4 py-2">
+            <Text className="font-rubik-medium text-lg text-black-200 dark:text-white">
+              Search Results for: {searchQuery}
+            </Text>
+            <View>
+              {recipes.map((recipe) => (
+                <Card key={recipe._id} recipe={recipe} />
+              ))}
             </View>
-          }
-        />
+          </View>
+        )}
       </View>
     </SafeAreaView>
   );

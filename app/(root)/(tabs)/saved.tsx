@@ -24,7 +24,7 @@ const Saved = () => {
   const { userData } = useUserStore();
   return (
     <SafeAreaView className="flex bg-white w-full h-full dark:bg-black-300">
-      <View className="flex gap-8 px-4 py-12 rounded-b-3xl bg-primary-100">
+      <View className="flex gap-8 px-4 py-8 rounded-b-3xl bg-primary-100">
         <Text className="font-rubik-bold text-3xl text-white">
           Saved Recipe
         </Text>

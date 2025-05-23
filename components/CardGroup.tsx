@@ -25,7 +25,7 @@ const CardGroup = ({ title, data }: cardGroup) => {
       </View>
       <FlatList
         data={data}
-        renderItem={({ item }) => <Card {...item} />}
+        renderItem={({ item }) => <Card recipe={item} />}
         keyExtractor={(item) => item._id!.toString()}
         bounces={true}
         showsHorizontalScrollIndicator={false}

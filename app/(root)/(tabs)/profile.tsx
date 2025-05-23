@@ -6,7 +6,7 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import images from "@/constants/images";
 import { Link, router } from "expo-router";
@@ -16,12 +16,16 @@ import icons from "@/constants/icons";
 import axios from "axios";
 import { useUserStore } from "@/zustand/store";
 import axiosInstance from "@/utils/axios";
+import * as WebBrowser from "expo-web-browser";
+import * as AuthSession from "expo-auth-session";
+import { useSSO } from "@clerk/clerk-expo";
 
 const Profile = () => {
   const { colorScheme, toggleColorScheme } = useColorScheme();
   const { isSignedIn, signOut, getToken } = useAuth();
   const { user } = useUser();
   const { userData, setUser, clearUser } = useUserStore();
+  const { startSSOFlow } = useSSO();
 
   const onSignOut = () => {
     console.log("SIGNOUT: " + user?.fullName);
@@ -31,6 +35,29 @@ const Profile = () => {
   const handlePress = () => {
     router.push("/signIn");
   };
+  const googleSignIn = useCallback(async () => {
+    try {
+      const { createdSessionId, setActive, signIn, signUp } =
+        await startSSOFlow({
+          strategy: "oauth_google",
+          redirectUrl: AuthSession.makeRedirectUri(),
+        });
+
+      if (createdSessionId) {
+        setActive!({ session: createdSessionId });
+      } else {
+      }
+    } catch (error) {
+      console.log(JSON.stringify(error, null, 2));
+    }
+  }, []);
+
+  useEffect(() => {
+    void WebBrowser.warmUpAsync();
+    return () => {
+      void WebBrowser.coolDownAsync();
+    };
+  }, []);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -61,38 +88,71 @@ const Profile = () => {
           className="flex flex-row justify-center w-full border border-primary-100 px-10 py-3 rounded-[10px] bg-primary-100"
           onPress={handlePress}
         >
-          <Text className="font-rubik-medium text-white text-lg">Sign in</Text>
+          <Text className="font-rubik-medium text-white text-lg">
+            Sign in with email
+          </Text>
         </TouchableOpacity>
         <Text className="font-rubik text-black-100">Or</Text>
-        <Link href="/signUp" className="font-rubik text-black-200 text-lg">
-          Create New Account
-        </Link>
+        <TouchableOpacity
+          className="flex flex-row gap-2 w-full justify-center items-center border border-black-200 py-3 rounded-[12px]"
+          onPress={googleSignIn}
+        >
+          <Image className="size-7" source={icons.googleIcon}></Image>
+          <Text className="font-rubik-medium text-black-200 text-xl">
+            Continue with Google
+          </Text>
+        </TouchableOpacity>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="w-full h-full flex flex-row justify-center items-center bg-white dark:bg-black-300 relative">
-      <TouchableOpacity
-        className="absolute top-3 right-3"
-        onPress={() => toggleColorScheme()}
-      >
+    <SafeAreaView className="w-full h-full bg-white dark:bg-black-300 relative">
+      <View className="flex p-4 items-center gap-2">
+        <View className="flex flex-row-reverse items-center justify-between w-full py-4 mb-4">
+          <TouchableOpacity onPress={() => router.push("/settings")}>
+            <Image
+              source={icons.threeDots}
+              className="size-8"
+              tintColor={colorScheme == "light" ? "#666876" : "#ffffff"}
+            />
+          </TouchableOpacity>
+          <Text className="font-rubik-medium text-left text-2xl text-black-300 dark:text-white">
+            Profile
+          </Text>
+        </View>
         <Image
-          source={icons.darkModeToggle}
-          className="size-12"
-          tintColor={colorScheme == "light" ? "#666876" : "#ffffff"}
+          source={{ uri: user?.imageUrl }}
+          className="size-24 border border-black-200 dark:border-white rounded-full"
         />
-      </TouchableOpacity>
-      <View className="flex items-center gap-4">
-        <Text className="font-rubik text-2xl text-black-200">
-          Signed In as {user?.fullName}{" "}
+        <Text className="font-rubik-medium text-black-300 dark:text-white text-2xl">
+          {user?.fullName}
         </Text>
-        <TouchableOpacity
-          className="w-full py-2 flex items-center border border-red-500 rounded-[10px]"
-          onPress={onSignOut}
-        >
-          <Text className="font-rubik text-lg text-red-500">Sign Out</Text>
-        </TouchableOpacity>
+        <Text className="font-rubik text-black-200 dark:text-white text-lg">
+          @{user?.username}
+        </Text>
+        <View className="w-full flex flex-row justify-evenly">
+          <View className="flex-1 flex flex-row justify-center gap-2">
+            <Text className="font-rubik text-lg text-black-200">
+              {userData?.followers.length}
+            </Text>
+            <Text className="font-rubik text-lg text-black-200">Followers</Text>
+          </View>
+          <View className="flex-1 flex flex-row justify-center gap-2">
+            <Text className="font-rubik text-lg text-black-200">
+              {userData?.following.length}
+            </Text>
+            <Text className="font-rubik text-lg text-black-200">Following</Text>
+          </View>
+        </View>
+      </View>
+      <View className="p-4">
+        <Text className="font-rubik-medium text-3xl text-black-200 dark:text-white">
+          Recipes
+        </Text>
+        <Text className="font-rubik text-lg text-black-200 dark:text-white py-8 text-center">
+          No Recipe Found
+        </Text>
       </View>
     </SafeAreaView>
   );

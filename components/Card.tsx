@@ -4,7 +4,11 @@ import icons from "@/constants/icons";
 import images from "@/constants/images";
 import { router } from "expo-router";
 
-const Card = (recipe: Partial<Recipe>) => {
+interface Props {
+  recipe: Partial<Recipe>;
+}
+
+const Card = ({ recipe }: Props) => {
   return (
     <View key={recipe._id} className="w-[180px]">
       <TouchableOpacity

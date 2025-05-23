@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   Image,
-  KeyboardAvoidingView,
   ScrollView,
   Alert,
   Keyboard,
@@ -19,9 +18,6 @@ import { Controller, SubmitHandler, useForm } from "react-hook-form";
 import { useAuth, useSignUp } from "@clerk/clerk-expo";
 import axiosInstance from "@/utils/axios";
 import { useColorScheme } from "nativewind";
-import { useSSO } from "@clerk/clerk-expo";
-import * as AuthSession from "expo-auth-session";
-import * as WebBrowser from "expo-web-browser";
 
 interface UserData {
   fullName: string;
@@ -31,6 +27,7 @@ interface UserData {
 type FormData = {
   firstname: string;
   lastname: string;
+  username: string;
   email: string;
   password: string;
 };
@@ -41,8 +38,6 @@ const SignUp = () => {
     handleSubmit,
     formState: { errors },
   } = useForm<FormData>();
-
-  const { startSSOFlow } = useSSO();
   const { isLoaded, signUp, setActive } = useSignUp();
   const { getToken } = useAuth();
   const { colorScheme } = useColorScheme();
@@ -50,6 +45,7 @@ const SignUp = () => {
 
   const firstNameRef = useRef<TextInput | null>(null);
   const lastNameRef = useRef<TextInput | null>(null);
+  const usernameRef = useRef<TextInput | null>(null);
   const emailRef = useRef<TextInput | null>(null);
   const passwordRef = useRef<TextInput | null>(null);
   const confirmPasswordRef = useRef<TextInput | null>(null);
@@ -62,6 +58,8 @@ const SignUp = () => {
   const [retypedPasswordError, setRetypedPasswordError] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isValidated, setIsValidated] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState(false);
 
   const screenHeight = Dimensions.get("screen").height;
 
@@ -78,7 +76,7 @@ const SignUp = () => {
         lastName: data.lastname,
         emailAddress: data.email,
         password: data.password,
-        username: `${data.firstname}${data.lastname}`.toLowerCase(),
+        username: data.username,
       });
       await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
       setPendingVerification(true);
@@ -138,47 +136,20 @@ const SignUp = () => {
     }
   };
 
-  const googleSignIn = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const { createdSessionId, setActive, signIn, signUp } =
-        await startSSOFlow({
-          strategy: "oauth_google",
-          redirectUrl: AuthSession.makeRedirectUri(),
-        });
-
-      if (createdSessionId) {
-        setActive!({ session: createdSessionId });
-      } else {
-      }
-    } catch (error) {
-      console.log(JSON.stringify(error, null, 2));
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void WebBrowser.warmUpAsync();
-    return () => {
-      void WebBrowser.coolDownAsync();
-    };
-  }, []);
-
   if (pendingVerification) {
     return (
-      <SafeAreaView className="w-full h-full bg-white dark:bg-black-300 relative">
-        <TouchableOpacity
-          className="w-fit  absolute top-4 left-4 p-2 rounded-full bg-white"
-          onPress={() => setPendingVerification(false)}
-        >
-          <Image
-            source={icons.backArrow}
-            tintColor={colorScheme === "light" ? "#ffffff" : "#191d31"}
-            className="size-8"
-          />
-        </TouchableOpacity>
-        <View className="w-full h-full px-12 py-24 flex gap-4">
+      <SafeAreaView className="w-full h-full bg-white dark:bg-black-300">
+        <View className="w-full h-full px-8 py-8 flex gap-4">
+          <TouchableOpacity
+            className="mb-8"
+            onPress={() => setPendingVerification(false)}
+          >
+            <Image
+              source={icons.backArrow}
+              tintColor={colorScheme === "light" ? "#191d31" : "#fff"}
+              className="size-8"
+            />
+          </TouchableOpacity>
           <Text className="font-rubik-bold text-3xl text-black-300 dark:text-white">
             Email Verification
           </Text>
@@ -190,14 +161,13 @@ const SignUp = () => {
             placeholder="code"
             placeholderTextColor="#8C8E98"
             onChangeText={(code) => setCode(code)}
-            className="w-full border border-black-200 rounded-xl text-lg text-black-200 px-4"
+            className="w-full border border-black-200 rounded-xl text-lg text-black-200 p-3"
             inputMode="numeric"
             maxLength={6}
           />
-
           <TouchableOpacity
             onPress={onVerifyPress}
-            className="flex items-center w-full border border-primary-100 px-10 py-3 mt-8 rounded-[10px] bg-primary-100"
+            className="flex items-center w-full border border-primary-100 px-10 py-3 rounded-[10px] bg-primary-100"
           >
             {isLoading ? (
               <ActivityIndicator size="small" color="#ffffff" />
@@ -207,6 +177,14 @@ const SignUp = () => {
               </Text>
             )}
           </TouchableOpacity>
+          <Text className="font-rubik text-lg text-black-200 text-center">
+            Didn’t receive the code?{" "}
+            <TouchableOpacity onPress={() => setPendingVerification(false)}>
+              <Text className="font-rubik-semibold text-primary-100 underline">
+                Resend
+              </Text>
+            </TouchableOpacity>
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -214,34 +192,25 @@ const SignUp = () => {
 
   return (
     <SafeAreaView className="relative">
-      <TouchableOpacity
-        className="w-fit absolute top-4 left-4 p-2 z-50 rounded-full bg-white/90"
-        onPress={() => router.back()}
-      >
-        <Image
-          source={icons.backArrow}
-          tintColor="#191d31"
-          className="size-8"
-        />
-      </TouchableOpacity>
       {/*Heading*/}
       <ScrollView
         showsVerticalScrollIndicator={false}
         className="w-full h-full flex gap-[2rem] dark:bg-black-300"
         bounces={false}
       >
-        <View
-          className="flex justify-center items-center bg-primary-100 rounded-b-3xl"
-          style={{ height: screenHeight / 6 }}
-        >
-          <Text className="font-rubik-bold text-5xl text-center w-fit text-white">
-            NomNom
-          </Text>
-        </View>
-        <View className="flex gap-4 p-8">
-          <Text className="font-rubik-semibold mb-4 text-center text-black-300 text-3xl dark:text-white">
-            Sign Up
-          </Text>
+        <View className="flex items-center gap-4 p-8">
+          <View className="w-full flex items-center gap-8">
+            <TouchableOpacity className="mr-auto" onPress={() => router.back()}>
+              <Image
+                source={icons.backArrow}
+                tintColor={colorScheme === "light" ? "#191d31" : "#fff"}
+                className="size-8"
+              />
+            </TouchableOpacity>
+            <Text className="font-rubik-semibold mb-4 text-center text-black-300 text-3xl dark:text-white">
+              Sign Up
+            </Text>
+          </View>
           <View className="flex flex-row gap-4">
             <View className="flex-1">
               <Text className="font-rubik text-lg text-black-100 ml-2">
@@ -253,7 +222,7 @@ const SignUp = () => {
                 render={({ field: { onChange, onBlur, value } }) => (
                   <TextInput
                     ref={firstNameRef}
-                    className={`px-3 text-lg text-black-100 border ${
+                    className={`p-3 text-lg text-black-100 border ${
                       errors.firstname?.message
                         ? "border-red-500"
                         : "border-black-100"
@@ -284,7 +253,7 @@ const SignUp = () => {
                 render={({ field: { onChange, onBlur, value } }) => (
                   <TextInput
                     ref={lastNameRef}
-                    className={`px-3 text-lg text-black-100 border ${
+                    className={`p-3 text-lg text-black-100 border ${
                       errors.lastname?.message
                         ? "border-red-500"
                         : "border-black-100"
@@ -293,7 +262,7 @@ const SignUp = () => {
                     onBlur={onBlur}
                     value={value}
                     returnKeyType="next"
-                    onSubmitEditing={() => emailRef.current?.focus()}
+                    onSubmitEditing={() => usernameRef.current?.focus()}
                     submitBehavior="submit"
                   />
                 )}
@@ -307,7 +276,41 @@ const SignUp = () => {
             </View>
           </View>
 
-          <View>
+          <View className="w-full">
+            <Text className="font-rubik text-lg text-black-100 ml-2">
+              Username
+            </Text>
+            <Controller
+              control={control}
+              rules={{
+                required: "Username is required",
+              }}
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput
+                  ref={usernameRef}
+                  className={`p-3 text-lg text-black-100 border ${
+                    errors.username?.message
+                      ? "border-red-500"
+                      : "border-black-100"
+                  } rounded-[10px]`}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  value={value}
+                  returnKeyType="next"
+                  onSubmitEditing={() => emailRef.current?.focus()}
+                  submitBehavior="submit"
+                />
+              )}
+              name="username"
+            />
+            {errors.username?.message && (
+              <Text className="font-rubik text-red-500 mt-1">
+                {errors.username.message}
+              </Text>
+            )}
+          </View>
+
+          <View className="w-full">
             <Text className="font-rubik text-lg text-black-100 ml-2">
               Email
             </Text>
@@ -323,7 +326,7 @@ const SignUp = () => {
               render={({ field: { onChange, onBlur, value } }) => (
                 <TextInput
                   ref={emailRef}
-                  className={`px-3 text-lg text-black-100 border ${
+                  className={`p-3 text-lg text-black-100 border ${
                     errors.email?.message
                       ? "border-red-500"
                       : "border-black-100"
@@ -345,7 +348,7 @@ const SignUp = () => {
               </Text>
             )}
           </View>
-          <View>
+          <View className="w-full">
             <Text className="font-rubik text-lg text-black-100 ml-2">
               Password
             </Text>
@@ -362,7 +365,7 @@ const SignUp = () => {
                 render={({ field: { onChange, onBlur, value } }) => (
                   <TextInput
                     ref={passwordRef}
-                    className={`px-3 pr-12 text-lg text-black-100 border ${
+                    className={`p-3 pr-12 text-lg text-black-100 border ${
                       errors.password?.message
                         ? "border-red-500"
                         : "border-black-100"
@@ -380,7 +383,7 @@ const SignUp = () => {
                 name="password"
               />
               <TouchableOpacity
-                className="flex justify-center items-center h-full absolute top-0 right-0 p-2"
+                className="flex justify-center items-center h-full absolute top-0 right-2 p-2"
                 onPress={() => setShowPassword(!showPassword)}
               >
                 <Image
@@ -398,7 +401,7 @@ const SignUp = () => {
               </Text>
             )}
           </View>
-          <View className="relative">
+          <View className="w-full relative">
             <Text className="font-rubik text-lg text-black-100 ml-2">
               Confirm Password
             </Text>
@@ -413,14 +416,14 @@ const SignUp = () => {
                 returnKeyType="done"
                 onSubmitEditing={handleSubmit(onSubmit)}
                 submitBehavior="submit"
-                className={`px-3 text-lg text-black-100 border ${
+                className={`p-3 text-lg text-black-100 border ${
                   retypedPasswordError ? "border-red-500" : "border-black-100"
                 } rounded-[10px]`}
                 autoCapitalize="none"
                 secureTextEntry={!showPassword}
               />
               <TouchableOpacity
-                className="flex justify-center items-center h-full absolute top-0 right-0 p-2"
+                className="flex justify-center items-center h-full absolute top-0 right-2 p-2"
                 onPress={() => setShowPassword(!showPassword)}
               >
                 <Image
@@ -447,18 +450,6 @@ const SignUp = () => {
             ) : (
               <Text className="font-rubik-medium text-white">Sign up</Text>
             )}
-          </TouchableOpacity>
-        </View>
-        <View className="flex items-center gap-4 px-12">
-          <Text className="font-rubik-light text-black-100 text-lg">Or</Text>
-          <TouchableOpacity
-            onPress={googleSignIn}
-            className="flex flex-row gap-2 w-full justify-center items-center border border-black-200 py-3 rounded-[12px]"
-          >
-            <Image className="size-7" source={icons.googleIcon} />
-            <Text className="font-rubik-medium text-black-200 text-lg">
-              Continue with Google
-            </Text>
           </TouchableOpacity>
           <Text className="font-rubik text-xl text-black-100 mt-4">
             Already have an acccout?{" "}

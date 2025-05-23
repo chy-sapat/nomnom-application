@@ -15,12 +15,9 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Link, router } from "expo-router";
 import icons from "@/constants/icons";
-import * as WebBrowser from "expo-web-browser";
-import * as AuthSession from "expo-auth-session";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import { useColorScheme } from "nativewind";
 import { useSignIn, useAuth } from "@clerk/clerk-expo";
-import { useSSO } from "@clerk/clerk-expo";
 
 type FormData = {
   emailUsername: string;
@@ -32,8 +29,6 @@ const SignIn = () => {
     handleSubmit,
     formState: { errors },
   } = useForm<FormData>();
-
-  const { startSSOFlow } = useSSO();
 
   const screenHeight = Dimensions.get("screen").height;
 
@@ -67,56 +62,22 @@ const SignIn = () => {
     }
   };
 
-  const googleSignIn = useCallback(async () => {
-    try {
-      const { createdSessionId, setActive, signIn, signUp } =
-        await startSSOFlow({
-          strategy: "oauth_google",
-          redirectUrl: AuthSession.makeRedirectUri(),
-        });
-
-      if (createdSessionId) {
-        setActive!({ session: createdSessionId });
-      } else {
-      }
-    } catch (error) {
-      console.log(JSON.stringify(error, null, 2));
-    }
-  }, []);
-
-  useEffect(() => {
-    void WebBrowser.warmUpAsync();
-    return () => {
-      void WebBrowser.coolDownAsync();
-    };
-  }, []);
   return (
     <SafeAreaView className="w-full h-full flex gap-6 bg-white dark:bg-black-300 relative">
-      {/* back-button */}
-      <TouchableOpacity
-        className="w-fit bg-white/50 absolute top-4 left-4 p-2 rounded-full z-50 "
-        onPress={() => router.back()}
-      >
-        <Image
-          source={icons.backArrow}
-          tintColor="#191d31"
-          className="size-8"
-        />
-      </TouchableOpacity>
-      {/*Heading*/}
-      <View
-        className="flex justify-center items-center bg-primary-100 rounded-b-3xl"
-        style={{ height: screenHeight / 6 }}
-      >
-        <Text className="font-rubik-bold text-5xl text-center w-fit text-white">
-          NomNom
-        </Text>
-      </View>
       <ScrollView>
-        <View className="flex gap-[2rem] px-8">
-          <Text className="font-rubik-semibold mb-4 text-black-300 text-3xl text-center dark:text-white">
-            Sign In
-          </Text>
+        <View className="flex gap-[2rem] p-8">
+          <View className="flex items-center gap-8">
+            <TouchableOpacity className="mr-auto" onPress={() => router.back()}>
+              <Image
+                source={icons.backArrow}
+                tintColor={colorScheme === "dark" ? "#fff" : "#1981d3"}
+                className="size-8"
+              />
+            </TouchableOpacity>
+            <Text className="font-rubik-semibold text-black-300 text-3xl text-center dark:text-white">
+              Sign In
+            </Text>
+          </View>
           {/* Sign in form input */}
           <View className="flex gap-[1.5rem]">
             {/* Username*/}
@@ -217,23 +178,6 @@ const SignIn = () => {
                 Forgot Password?
               </Text>
             </Link>
-          </View>
-
-          {/* Sign in With*/}
-          <View className="flex items-center gap-8">
-            <Text className="font-rubik-light text-black-100 text-lg">Or</Text>
-
-            {/*google link*/}
-            <TouchableOpacity
-              className="flex flex-row gap-2 w-full justify-center items-center border border-black-200 py-3 rounded-[12px]"
-              onPress={googleSignIn}
-            >
-              <Image className="size-7" source={icons.googleIcon}></Image>
-              <Text className="font-rubik-medium text-black-200 text-xl">
-                Continue with Google
-              </Text>
-            </TouchableOpacity>
-            {/* Sign up link*/}
             <Text className="font-rubik text-black-200 text-lg">
               Don't Have An Account? <Link href="/signUp">Sign Up</Link>
             </Text>
