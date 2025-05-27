@@ -5,36 +5,34 @@ import {
   Image,
   Alert,
   ActivityIndicator,
+  ScrollView,
 } from "react-native";
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import images from "@/constants/images";
 import { Link, router } from "expo-router";
 import { useColorScheme } from "nativewind";
-import { SignedIn, useAuth, useClerk, useUser } from "@clerk/clerk-expo";
+import { useAuth, useUser } from "@clerk/clerk-expo";
 import icons from "@/constants/icons";
-import axios from "axios";
-import { useUserStore } from "@/zustand/store";
+import { useRecipeStore, useUserStore } from "@/zustand/store";
 import axiosInstance from "@/utils/axios";
 import * as WebBrowser from "expo-web-browser";
 import * as AuthSession from "expo-auth-session";
 import { useSSO } from "@clerk/clerk-expo";
+import Card from "@/components/Card";
 
 const Profile = () => {
   const { colorScheme, toggleColorScheme } = useColorScheme();
   const { isSignedIn, signOut, getToken } = useAuth();
   const { user } = useUser();
   const { userData, setUser, clearUser } = useUserStore();
+  const { userRecipes, setUserRecipes } = useRecipeStore();
+  const [loading, setLoading] = useState(false);
   const { startSSOFlow } = useSSO();
 
-  const onSignOut = () => {
-    console.log("SIGNOUT: " + user?.fullName);
-    signOut();
-    clearUser();
-  };
   const handlePress = () => {
     router.push("/signIn");
   };
+
   const googleSignIn = useCallback(async () => {
     try {
       const { createdSessionId, setActive, signIn, signUp } =
@@ -75,7 +73,25 @@ const Profile = () => {
         signOut();
       }
     };
+    const fetchUserRecipes = async () => {
+      setLoading(true);
+      try {
+        const response = await axiosInstance.get(
+          `/recipe/getUserRecipes/${userData?._id}`
+        );
+        setUserRecipes(response.data);
+      } catch (error: any) {
+        Alert.alert("Error", "An error occurred while fetching user recipes");
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
     isSignedIn && userData == null && fetchUserData();
+    isSignedIn &&
+      userData != null &&
+      userRecipes.length === 0 &&
+      fetchUserRecipes();
   }, []);
 
   if (!isSignedIn) {
@@ -146,13 +162,29 @@ const Profile = () => {
           </View>
         </View>
       </View>
-      <View className="p-4">
+      <View className="p-4 border-t border-black-200 dark:border-white">
         <Text className="font-rubik-medium text-3xl text-black-200 dark:text-white">
           Recipes
         </Text>
-        <Text className="font-rubik text-lg text-black-200 dark:text-white py-8 text-center">
-          No Recipe Found
-        </Text>
+        {loading ? (
+          <View>
+            <ActivityIndicator
+              size="large"
+              color={colorScheme === "dark" ? "#fff" : "#191d31"}
+              className="mt-8"
+            />
+          </View>
+        ) : userRecipes?.length > 0 ? (
+          <ScrollView contentContainerClassName="flex-row flex-wrap justify-between gap-4 mt-4">
+            {userRecipes.map((recipe) => (
+              <Card key={recipe._id} recipe={recipe} />
+            ))}
+          </ScrollView>
+        ) : (
+          <Text className="font-rubik text-lg text-black-200 dark:text-white py-8 text-center">
+            No Recipe Found
+          </Text>
+        )}
       </View>
     </SafeAreaView>
   );

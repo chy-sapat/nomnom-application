@@ -37,7 +37,7 @@ const Saved = () => {
       {isSignedIn ? (
         <FlatList
           data={savedRecipes}
-          renderItem={({ item }) => <Card {...item} />}
+          renderItem={({ item }) => <Card recipe={item} />}
           keyExtractor={(item) => item._id!.toString()}
           numColumns={2}
           showsVerticalScrollIndicator={false}

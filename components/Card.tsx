@@ -24,16 +24,18 @@ const Card = ({ recipe }: Props) => {
           className="w-full h-[8rem]"
           resizeMode="cover"
         />
-        <View className="flex flex-row items-center gap-1 px-1 py-0.5 bg-white/90 rounded-full absolute top-2 right-2">
-          <Image
-            source={icons.star}
-            className="size-5"
-            tintColor="#ffDE21"
-          ></Image>
-          <Text className="text-lg font-rubik-medium text-black-200">
-            {recipe.averageRating}
-          </Text>
-        </View>
+        {recipe.averageRating! > 0 && (
+          <View className="flex flex-row items-center gap-1 px-1 py-0.5 bg-white/90 rounded-full absolute top-2 right-2">
+            <Image
+              source={icons.star}
+              className="size-5"
+              tintColor="#ffDE21"
+            ></Image>
+            <Text className="text-lg font-rubik-medium text-black-200">
+              {recipe.averageRating}
+            </Text>
+          </View>
+        )}
         <View className="flex gap-2 p-2">
           <Text
             className="font-rubik-semibold text-lg text-black-200 mb-[5px] dark:text-white"
