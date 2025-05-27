@@ -28,11 +28,13 @@ interface RecipeStore {
   latestRecipe: Recipe[];
   popularRecipes: Recipe[];
   recommendedRecipes: Recipe[];
+  userRecipes: Recipe[];
 
   setAllRecipes: (recipes: Recipe[]) => void;
   setLatestRecipe: (recipes: Recipe[]) => void;
   setPopularRecipes: (recipes: Recipe[]) => void;
   setRecommendedRecipes: (recipes: Recipe[]) => void;
+  setUserRecipes: (recipes: Recipe[]) => void;
 
   clearAll: () => void;
 }
@@ -55,6 +57,6 @@ interface User {
 
 interface UserStore {
   userData: User | null;
-  setUser: (userData: User) => void;
+  setUser: (userData: User | null) => void;
   clearUser: () => void;
 }

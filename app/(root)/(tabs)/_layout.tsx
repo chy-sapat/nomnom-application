@@ -48,7 +48,7 @@ const TabsLayout = () => {
         tabBarStyle: {
           height: 48,
           backgroundColor: colorScheme === "light" ? "#ffffff" : "#191d31",
-          paddingBlock: 24,
+          paddingBlock: 32,
         },
         tabBarHideOnKeyboard: true,
       }}
