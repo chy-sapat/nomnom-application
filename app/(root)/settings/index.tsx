@@ -10,7 +10,7 @@ import React from "react";
 import { useAuth, useUser } from "@clerk/clerk-expo";
 import { useUserStore } from "@/zustand/store";
 import icons from "@/constants/icons";
-import { router } from "expo-router";
+import { Link, router } from "expo-router";
 
 const Settings = () => {
   const { isSignedIn, signOut, getToken } = useAuth();
@@ -26,8 +26,17 @@ const Settings = () => {
 
   const handleOptionPress = (optionIndex: number) => {
     switch (optionIndex) {
+      case 0:
+        router.push("/settings/account");
+        break;
+      case 1:
+        router.push("/settings/notification");
+        break;
       case 2:
         router.push("/settings/darkModeSetting");
+        break;
+      case 3:
+        router.push("/settings/about");
         break;
       case 4:
         Alert.alert("Logout", "Are you sure you want to logout?", [
