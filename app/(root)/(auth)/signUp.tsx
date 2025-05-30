@@ -18,6 +18,7 @@ import { Controller, SubmitHandler, useForm } from "react-hook-form";
 import { useAuth, useSignUp } from "@clerk/clerk-expo";
 import axiosInstance from "@/utils/axios";
 import { useColorScheme } from "nativewind";
+import { useUserStore } from "@/zustand/store";
 
 interface UserData {
   fullName: string;
@@ -58,18 +59,15 @@ const SignUp = () => {
   const [retypedPasswordError, setRetypedPasswordError] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
-  const [isValidated, setIsValidated] = useState(false);
-  const [usernameAvailable, setUsernameAvailable] = useState(false);
-
-  const screenHeight = Dimensions.get("screen").height;
+  const { setUser } = useUserStore();
 
   const onSubmit: SubmitHandler<FormData> = async (data) => {
+    if (!isLoaded) return;
     if (data.password !== retypedPassword) {
       setRetypedPasswordError(true);
       return;
     }
     setIsLoading(true);
-    if (!isLoaded) return;
     try {
       await signUp.create({
         firstName: data.firstname,
@@ -97,9 +95,9 @@ const SignUp = () => {
   };
 
   const onVerifyPress = async () => {
+    if (!isLoaded) return;
     setIsLoading(true);
     Keyboard.dismiss();
-    if (!isLoaded) return;
     try {
       const signUpAttempt = await signUp.attemptEmailAddressVerification({
         code,
@@ -122,7 +120,13 @@ const SignUp = () => {
         );
         if (response.status == 201) {
           setIsLoading(false);
-          router.replace("/");
+          setUser(response.data.user);
+          router.replace("/preference/dietaryPreference");
+        } else {
+          Alert.alert(
+            "Error",
+            "Something went wrong while creating your account. Please try again later."
+          );
         }
       }
     } catch (error: any) {

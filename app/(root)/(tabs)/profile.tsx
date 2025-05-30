@@ -6,6 +6,7 @@ import {
   Alert,
   ActivityIndicator,
   ScrollView,
+  Dimensions,
 } from "react-native";
 import React, { useCallback, useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -24,10 +25,11 @@ const Profile = () => {
   const { colorScheme, toggleColorScheme } = useColorScheme();
   const { isSignedIn, signOut, getToken } = useAuth();
   const { user } = useUser();
-  const { userData, setUser, clearUser } = useUserStore();
+  const { userData, setUser } = useUserStore();
   const { userRecipes, setUserRecipes } = useRecipeStore();
   const [loading, setLoading] = useState(false);
   const { startSSOFlow } = useSSO();
+  const screenWidth = Dimensions.get("window").width;
 
   const handlePress = () => {
     router.push("/signIn");
@@ -73,6 +75,10 @@ const Profile = () => {
         signOut();
       }
     };
+    isSignedIn && userData == null && fetchUserData();
+  }, [isSignedIn, userData, getToken, setUser, signOut]);
+
+  useEffect(() => {
     const fetchUserRecipes = async () => {
       setLoading(true);
       try {
@@ -81,18 +87,19 @@ const Profile = () => {
         );
         setUserRecipes(response.data);
       } catch (error: any) {
-        Alert.alert("Error", "An error occurred while fetching user recipes");
-        console.error(error);
+        if (error.response.status == 500) {
+          Alert.alert("Error", "An error occurred while fetching user recipes");
+          console.error(error);
+        }
       } finally {
         setLoading(false);
       }
     };
-    isSignedIn && userData == null && fetchUserData();
     isSignedIn &&
       userData != null &&
       userRecipes.length === 0 &&
       fetchUserRecipes();
-  }, []);
+  }, [isSignedIn, userData, userRecipes.length]);
 
   if (!isSignedIn) {
     return (
@@ -123,9 +130,9 @@ const Profile = () => {
   }
 
   return (
-    <SafeAreaView className="w-full h-full bg-white dark:bg-black-300 relative">
+    <SafeAreaView className="w-full h-full flex bg-white dark:bg-black-300 relative">
       <View className="flex p-4 items-center gap-2">
-        <View className="flex flex-row-reverse items-center justify-between w-full py-4 mb-4">
+        <View className="flex flex-row-reverse items-center justify-between w-full mb-4">
           <TouchableOpacity onPress={() => router.push("/settings")}>
             <Image
               source={icons.threeDots}
@@ -162,27 +169,38 @@ const Profile = () => {
           </View>
         </View>
       </View>
-      <View className="p-4 border-t border-black-200 dark:border-white">
-        <Text className="font-rubik-medium text-3xl text-black-200 dark:text-white">
+      <View
+        className="w-full flex-1"
+        style={{ paddingHorizontal: screenWidth * 0.05 }}
+      >
+        <Text className="font-rubik-medium text-3xl text-black-200 dark:text-white mb-4">
           Recipes
         </Text>
         {loading ? (
-          <View>
-            <ActivityIndicator
-              size="large"
-              color={colorScheme === "dark" ? "#fff" : "#191d31"}
-              className="mt-8"
-            />
+          <View className="flex gap-4 items-center">
+            <ActivityIndicator size="large" color="#e55934" className="mt-8" />
+            <Text className="font-rubik text-lg text-black-200 dark:text-white">
+              Loading Recipes
+            </Text>
           </View>
         ) : userRecipes?.length > 0 ? (
-          <ScrollView contentContainerClassName="flex-row flex-wrap justify-between gap-4 mt-4">
+          <ScrollView
+            contentContainerClassName="flex flex-row"
+            contentContainerStyle={{
+              justifyContent: "center",
+              flexWrap: "wrap",
+            }}
+          >
             {userRecipes.map((recipe) => (
               <Card key={recipe._id} recipe={recipe} />
             ))}
+            {userRecipes.length !== 0 && userRecipes.length % 2 !== 0 && (
+              <View className="" style={{ width: screenWidth * 0.45 }}></View>
+            )}
           </ScrollView>
         ) : (
           <Text className="font-rubik text-lg text-black-200 dark:text-white py-8 text-center">
-            No Recipe Found
+            No Recipes Found
           </Text>
         )}
       </View>

@@ -17,7 +17,7 @@ import { recipes } from "@/constants/data";
 import CardGroup from "@/components/CardGroup";
 import { useColorScheme } from "nativewind";
 import { useCallback, useEffect, useState } from "react";
-import { SignedIn, useUser, useAuth } from "@clerk/clerk-expo";
+import { SignedIn, SignedOut, useUser } from "@clerk/clerk-expo";
 import { useRecipeStore, useUserStore } from "@/zustand/store";
 import axios from "axios";
 import axiosInstance from "@/utils/axios";
@@ -75,6 +75,9 @@ export default function Index() {
               <SignedIn>
                 <Text className="font-rubik  text-white">{user?.fullName}</Text>
               </SignedIn>
+              <SignedOut>
+                <Text className="font-rubik text-white">Chef</Text>
+              </SignedOut>
             </View>
             <TouchableOpacity>
               <Image
@@ -112,14 +115,18 @@ export default function Index() {
           scrollsToTop={true}
         >
           {loading ? (
-            <ActivityIndicator size="large" />
+            <View className="flex justify-center items-center gap-2">
+              <ActivityIndicator size="large" color="#e55934" />
+              <Text className="font-rubik text-lg text-black-200 dark:text-white">
+                Loading Recipes
+              </Text>
+            </View>
           ) : (
             <>
               <CardGroup
                 title="Top Breakfast Recipes"
                 data={recipes.slice(0, 5)}
               />
-              <CardGroup title="Popular Recipes" data={recipes.slice(0, 5)} />
               <CardGroup
                 title="Latest Recipes"
                 data={

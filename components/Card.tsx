@@ -1,4 +1,4 @@
-import { View, Text, Image, TouchableOpacity } from "react-native";
+import { View, Text, Image, TouchableOpacity, Dimensions } from "react-native";
 import React from "react";
 import icons from "@/constants/icons";
 import images from "@/constants/images";
@@ -9,8 +9,9 @@ interface Props {
 }
 
 const Card = ({ recipe }: Props) => {
+  const screenWidth = Dimensions.get("window").width;
   return (
-    <View key={recipe._id} className="w-[180px]">
+    <View key={recipe._id} style={{ width: screenWidth * 0.45 }}>
       <TouchableOpacity
         className="flex items-start relative bg-white rounded-[10px] mr-4 shadow-card overflow-hidden dark:bg-black-200"
         onPress={() => {

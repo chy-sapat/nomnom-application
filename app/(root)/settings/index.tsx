@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import React from "react";
 import { useAuth, useUser } from "@clerk/clerk-expo";
-import { useUserStore } from "@/zustand/store";
+import { useRecipeStore, useUserStore } from "@/zustand/store";
 import icons from "@/constants/icons";
 import { Link, router } from "expo-router";
 
@@ -16,6 +16,7 @@ const Settings = () => {
   const { isSignedIn, signOut, getToken } = useAuth();
   const { user } = useUser();
   const { userData, setUser, clearUser } = useUserStore();
+  const { userRecipes, setUserRecipes } = useRecipeStore();
   const settingsOptions = [
     "Account",
     "Notifications",
@@ -45,12 +46,13 @@ const Settings = () => {
             style: "cancel",
           },
           {
-            text: "OK",
+            text: "Logout",
             onPress: () => {
               console.log("SIGNOUT: " + user?.fullName);
               signOut();
               clearUser();
-              router.replace("/");
+              setUserRecipes([]);
+              router.replace("/signIn");
             },
           },
         ]);
@@ -63,7 +65,7 @@ const Settings = () => {
   return (
     <SafeAreaView className="w-full h-full px-4 py-8 bg-white dark:bg-black-300">
       <View className="flex flex-row items-center gap-8 mb-4">
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity onPress={() => router.replace("/profile")}>
           <Image
             source={icons.backArrow}
             tintColor="#ffffff"

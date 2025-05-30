@@ -1,7 +1,6 @@
 import {
   View,
   Text,
-  Image,
   SafeAreaView,
   TouchableOpacity,
   TextInput,
@@ -10,7 +9,7 @@ import {
 import React from "react";
 import { useState } from "react";
 import { useColorScheme } from "nativewind";
-import { all } from "axios";
+import { useUserStore } from "@/zustand/store";
 
 const dietaryOption = [
   "Vegan",
@@ -30,13 +29,12 @@ const cuisineOption = [
   "Italian",
   "Korean",
 ];
-const allergyOption = ["Penuts", "Milk", "Soy", "Sesame", "wheat"];
 
 const dietaryPreference = () => {
   const [dietary, setDietary] = useState<string[]>([]);
   const [cuisine, setCuisine] = useState<string[]>([]);
-  const [allergies, setAllergies] = useState<string[]>([]);
   const [allergiesInput, setAllergiesInput] = useState<string>("");
+  const { userData } = useUserStore();
 
   const handleDietary = (option: string) => {
     if (dietary.includes(option)) {
@@ -56,32 +54,11 @@ const dietaryPreference = () => {
     }
   };
 
-  const handleAllergies = (option: string) => {
-    if (allergies.includes(option)) {
-      const newAllergies = allergies.filter((opt) => opt !== option);
-      setAllergies((prevState) => newAllergies);
-    } else {
-      setAllergies((prevState) => [...allergies, option]);
-    }
-  };
-
   const handlePreference = () => {
-    if (allergiesInput !== "") {
-      const extra = allergiesInput.split(",");
-      setAllergies([...allergies, ...extra]);
-    }
-    console.log(dietary);
-    console.log(cuisine);
-    console.log(allergies);
+    console.log(userData);
   };
   return (
     <SafeAreaView className="w-full h-full  bg-white dark:bg-black-300">
-      {/*Heading*/}
-      <View className="flex flex-row justify-center w-full my-[2rem]">
-        <Text className="font-rubik-bold text-[2rem] w-fit dark:text-white">
-          NomNom
-        </Text>
-      </View>
       <View className="p-3">
         <Text className="font-rubik text-black-200">
           Personalize your recipes by telling us about yourself
@@ -141,33 +118,13 @@ const dietaryPreference = () => {
             <Text className="font-rubik-medium text-[1.2rem] dark:text-white ">
               Allergies
             </Text>
-            <View className="flex-wrap flex-row ">
-              {allergyOption.map((option) => (
-                <TouchableOpacity
-                  key={option}
-                  className={`flex-row  items-center justify-center border rounded-[25px] m-[5px] p-[10px] ${
-                    allergies.includes(option)
-                      ? "border-white"
-                      : "border-black-200"
-                  } min-w-[100px] `}
-                  onPress={() => handleAllergies(option)}
-                >
-                  <Text className="font-rubik text-[1rem] text-black-200">
-                    {option}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <View>
-              <Text className="font-rubik text-black-200">Any Other</Text>
-              <TextInput
-                className="border border-black-200 text-black-200 p-2 m-2 rounded-xl text-lg"
-                value={allergiesInput}
-                onChangeText={(text) => setAllergiesInput(text)}
-                placeholder="Strawberry, Walnuts"
-                placeholderTextColor={"#666876"}
-              />
-            </View>
+            <TextInput
+              className="border border-black-200 text-black-200 p-2 m-2 rounded-xl text-lg"
+              value={allergiesInput}
+              onChangeText={(text) => setAllergiesInput(text)}
+              placeholder="Strawberry, Walnuts"
+              placeholderTextColor={"#666876"}
+            />
           </View>
         </View>
       </ScrollView>

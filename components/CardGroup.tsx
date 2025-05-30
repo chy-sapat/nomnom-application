@@ -13,7 +13,7 @@ interface cardGroup {
 const CardGroup = ({ title, data }: cardGroup) => {
   return (
     <View className="py-2">
-      <View className="flex flex-row items-center justify-between">
+      <View className="flex flex-row items-center justify-between mb-4">
         <Text className="font-rubik-semibold text-xl text-black-200 dark:text-white">
           {title}
         </Text>
@@ -29,7 +29,6 @@ const CardGroup = ({ title, data }: cardGroup) => {
         keyExtractor={(item) => item._id!.toString()}
         bounces={true}
         showsHorizontalScrollIndicator={false}
-        contentContainerClassName="py-2"
         horizontal
       />
     </View>
