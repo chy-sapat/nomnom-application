@@ -23,6 +23,13 @@ interface Recipe {
   updatedAt?: string;
 }
 
+interface UserPreference {
+  _id: string;
+  clerkId: string;
+  dietaryPreference: Array<string>;
+  allergies: Array<string>;
+}
+
 interface RecipeStore {
   allRecipes: Recipe[];
   latestRecipe: Recipe[];
@@ -57,6 +64,8 @@ interface User {
 
 interface UserStore {
   userData: User | null;
+  userPreference: UserPreference | null;
   setUser: (userData: User | null) => void;
-  clearUser: () => void;
+  setUserPreference: (preference: UserPreference | null) => void;
+  clearUserAll: () => void;
 }

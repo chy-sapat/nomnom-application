@@ -44,11 +44,6 @@ type RecipeCreateData = {
   description: string;
 };
 
-type RecipeIngrdient = {
-  quantity: string;
-  ingredient: string;
-};
-
 const RecipeForm = ({
   loading,
   mode = "create",
@@ -77,10 +72,8 @@ const RecipeForm = ({
   const titleRef = useRef<TextInput | null>(null);
   const descriptionRef = useRef<TextInput | null>(null);
   const [imageUrl, setImageUrl] = useState(recipeData?.image || "");
-  const [ingredients, setIngredients] = useState<Array<RecipeIngrdient>>(
-    recipeData
-      ? parseIngredients(recipeData?.ingredients!)
-      : [{ quantity: "", ingredient: "" }]
+  const [ingredients, setIngredients] = useState<Array<string>>(
+    recipeData?.ingredients || [""]
   );
   const [directions, setDirections] = useState<Array<string>>(
     recipeData?.directions || [""]
@@ -93,19 +86,9 @@ const RecipeForm = ({
   const [labels, setLabels] = useState<Array<string>>(recipeData?.labels || []);
   const [cookTime, setCookTime] = useState(recipeData?.cookTime || 0);
 
-  function parseIngredients(
-    raw: string[]
-  ): { quantity: string; ingredient: string }[] {
-    const newIngredients = raw.map((line) => {
-      const [quantity, ingredient] = line.split(",").map((s) => s.trim());
-      return { quantity, ingredient };
-    });
-
-    return newIngredients;
-  }
   const addIngredientsBelow = (index: number) => {
     const newIngredients = [...ingredients];
-    newIngredients.splice(index + 1, 0, { quantity: "", ingredient: "" });
+    newIngredients.splice(index + 1, 0, "");
     setIngredients(newIngredients);
   };
 
@@ -115,13 +98,9 @@ const RecipeForm = ({
     setDirections(newDirections);
   };
 
-  const updateIngredients = (
-    item: string,
-    field: keyof RecipeIngrdient,
-    index: number
-  ) => {
+  const updateIngredients = (item: string, index: number) => {
     const newIngredients = [...ingredients];
-    newIngredients[index][field] = item;
+    newIngredients[index] = item;
     setIngredients(newIngredients);
   };
 
@@ -170,15 +149,6 @@ const RecipeForm = ({
     setLabels(newLabels);
   };
 
-  const getCombinedIngredients = () => {
-    const combined = ingredients
-      .map((ingredient) =>
-        `${ingredient.quantity}, ${ingredient.ingredient}`.trim()
-      )
-      .filter((combined) => combined !== "");
-    return combined;
-  };
-
   const formatTime = ({
     hours,
     minutes,
@@ -190,8 +160,7 @@ const RecipeForm = ({
   };
 
   const onSubmit: SubmitHandler<RecipeCreateData> = (data) => {
-    const combined = getCombinedIngredients();
-    if (combined.length === 0) {
+    if (ingredients.length === 1 && ingredients[0].trim() === "") {
       Alert.alert("", "Add atleast one ingredient");
       return;
     }
@@ -202,7 +171,7 @@ const RecipeForm = ({
     onButtonClick({
       title: data.title,
       description: data.description,
-      ingredients: combined,
+      ingredients: ingredients,
       directions: directions,
       servings: servings,
       labels: labels,
@@ -360,20 +329,9 @@ const RecipeForm = ({
                       tintColor={"#666876"}
                     />
                     <TextInput
-                      className="w-24 border rounded-2xl border-black-100 px-3 py-3 text-black-200 font-rubik dark:text-white"
-                      value={ingredient.quantity}
-                      placeholder="1 lt"
-                      placeholderTextColor={"#666876"}
-                      onChangeText={(text) =>
-                        updateIngredients(text, "quantity", index)
-                      }
-                    />
-                    <TextInput
                       className="flex-1 border rounded-2xl border-black-100 px-3 py-3 text-black-200 font-rubik dark:text-white"
-                      value={ingredient.ingredient}
-                      onChangeText={(text) =>
-                        updateIngredients(text, "ingredient", index)
-                      }
+                      value={ingredient}
+                      onChangeText={(text) => updateIngredients(text, index)}
                       placeholder="water"
                       placeholderTextColor={"#666876"}
                     />
@@ -438,12 +396,7 @@ const RecipeForm = ({
             <View className="flex flex-row gap-4 justify-center items-center">
               <TouchableOpacity
                 className="p-2 flex flex-row gap-2 items-center"
-                onPress={() =>
-                  setIngredients([
-                    ...ingredients,
-                    { quantity: "", ingredient: "" },
-                  ])
-                }
+                onPress={() => setIngredients([...ingredients, ""])}
               >
                 <Image
                   source={icons.plus}
@@ -694,7 +647,7 @@ const RecipeForm = ({
             </View>
           </View>
           <TouchableOpacity
-            className={`flex items-center justify-center ${
+            className={`flex gap-2 items-center justify-center ${
               loading ? "bg-primary-100/80" : "bg-primary-100"
             } py-4 rounded-2xl`}
             onPress={handleSubmit(onSubmit)}
@@ -702,6 +655,9 @@ const RecipeForm = ({
             {loading ? (
               <>
                 <ActivityIndicator size="small" color="#ffffff" />
+                <Text>
+                  {mode === "create" ? "Publishing..." : "Updating..."}
+                </Text>
               </>
             ) : (
               <Text className="font-rubik-medium text-white text-xl">

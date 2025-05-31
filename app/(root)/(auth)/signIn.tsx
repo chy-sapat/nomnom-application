@@ -48,11 +48,10 @@ const SignIn = () => {
     try {
       const signInAttempt = await signIn.create({
         identifier: data.emailUsername.trim(),
-        password: data.password.trim(),
+        password: data.password,
       });
       if (signInAttempt.status === "complete") {
         await setActive({ session: signInAttempt.createdSessionId });
-        ToastAndroid.show("Signed In Succefully", ToastAndroid.SHORT);
         router.replace("/profile");
       }
     } catch (error: any) {

@@ -11,11 +11,13 @@ import { useAuth, useUser } from "@clerk/clerk-expo";
 import { useRecipeStore, useUserStore } from "@/zustand/store";
 import icons from "@/constants/icons";
 import { Link, router } from "expo-router";
+import { useColorScheme } from "nativewind";
 
 const Settings = () => {
+  const { colorScheme } = useColorScheme();
   const { isSignedIn, signOut, getToken } = useAuth();
   const { user } = useUser();
-  const { userData, setUser, clearUser } = useUserStore();
+  const { userData, setUser, clearUserAll } = useUserStore();
   const { userRecipes, setUserRecipes } = useRecipeStore();
   const settingsOptions = [
     "Account",
@@ -50,7 +52,7 @@ const Settings = () => {
             onPress: () => {
               console.log("SIGNOUT: " + user?.fullName);
               signOut();
-              clearUser();
+              clearUserAll();
               setUserRecipes([]);
               router.replace("/signIn");
             },
@@ -64,15 +66,17 @@ const Settings = () => {
   };
   return (
     <SafeAreaView className="w-full h-full px-4 py-8 bg-white dark:bg-black-300">
-      <View className="flex flex-row items-center gap-8 mb-4">
+      <View className="flex flex-row items-center gap-4 mb-4">
         <TouchableOpacity onPress={() => router.replace("/profile")}>
           <Image
             source={icons.backArrow}
-            tintColor="#ffffff"
+            tintColor={colorScheme === "light" ? "#666876" : "#ffffff"}
             className="size-10"
           />
         </TouchableOpacity>
-        <Text className="font-rubik-medium text-white text-4xl">Settings</Text>
+        <Text className="font-rubik-medium text-black-200 text-4xl dark:text-white">
+          Settings
+        </Text>
       </View>
       <View className="flex flex-col gap-4 mt-4">
         {settingsOptions.map((option, index) => (

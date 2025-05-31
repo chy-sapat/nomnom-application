@@ -40,7 +40,10 @@ export default function Index() {
     const fetchLatestRecipes = async () => {
       setLoading(true);
       try {
-        const response = await axiosInstance.get("/recipe?latest=true");
+        const response = await axiosInstance.get(
+          `/recipe/?latest=true&clerkId=${user?.id}`
+        );
+        console.log(response.data);
         setLatestRecipe(response.data);
       } catch (error) {
         console.log(error);

@@ -27,6 +27,7 @@ const CardGroup = ({ title, data }: cardGroup) => {
         data={data}
         renderItem={({ item }) => <Card recipe={item} />}
         keyExtractor={(item) => item._id!.toString()}
+        contentContainerClassName="gap-4"
         bounces={true}
         showsHorizontalScrollIndicator={false}
         horizontal

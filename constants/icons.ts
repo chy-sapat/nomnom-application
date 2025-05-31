@@ -7,9 +7,10 @@ import plus from "@/assets/icons/plus.png";
 import save from "@/assets/icons/save.png";
 import profile from "@/assets/icons/profile.png";
 import uploadImg from "@/assets/icons/upload.png";
-import threeDots from "@/assets/icons/three_dots.png"
+import threeDots from "@/assets/icons/three_dots.png";
 import notification from "@/assets/icons/bell.png";
 import star from "@/assets/icons/star.png";
+import halfStar from "@/assets/icons/rating.png";
 import filter from "@/assets/icons/filter.png";
 import backArrow from "@/assets/icons/back-arrow.png";
 import minus from "@/assets/icons/minus.png";
@@ -34,6 +35,7 @@ export default {
   threeDots,
   notification,
   star,
+  halfStar,
   filter,
   backArrow,
   minus,
@@ -43,5 +45,5 @@ export default {
   close,
   edit,
   deleteIcon,
-  layer
+  layer,
 };

@@ -22,13 +22,14 @@ import { useUserStore } from "@/zustand/store";
 import { useColorScheme } from "nativewind";
 import axios from "axios";
 import { Rating, AirbnbRating } from "@rneui/themed";
-import { SignedIn } from "@clerk/clerk-expo";
+import { SignedIn, useAuth } from "@clerk/clerk-expo";
 
 const Recipe = () => {
   const [loading, setLoading] = useState(true);
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [similarRecipe, setSimilarRecipe] = useState<Recipe[]>([]);
   const { userData } = useUserStore();
+  const { isSignedIn } = useAuth();
   const { colorScheme } = useColorScheme();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const [rating, setRating] = useState(0);
@@ -40,9 +41,24 @@ const Recipe = () => {
   const deleteRecipe = async () => {
     setLoading(true);
     try {
-      const response = await axiosInstance.delete(`/recipe/${id}`);
-      ToastAndroid.show(response.data.message, ToastAndroid.LONG);
-      router.back();
+      Alert.alert(
+        "Delete Recipe",
+        "Are you sure you want to delete this recipe?",
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
+          },
+          {
+            text: "Delete",
+            onPress: async () => {
+              const response = await axiosInstance.delete(`/recipe/${id}`);
+              ToastAndroid.show(response.data.message, ToastAndroid.LONG);
+              router.back();
+            },
+          },
+        ]
+      );
     } catch (error) {
       Alert.alert("Something went wrong. Please try again.");
     } finally {
@@ -155,7 +171,12 @@ const Recipe = () => {
               <Text className="font-rubik-bold text-3xl text-black-300 dark:text-white">
                 {recipe?.title}
               </Text>
-              <Text className="font-rubik text-lg text-black-200">{`By ${recipe?.author.fullname}`}</Text>
+              <Text
+                className="font-rubik text-lg text-black-200 dark:text-white"
+                onPress={() => router.push(`/user/${recipe?.author._id}`)}
+              >
+                {recipe?.author.fullname}
+              </Text>
             </View>
             {recipe?.averageRating && (
               <View className="flex flex-row items-center gap-2 bg-black-100/80 px-2 rounded-full py-2">
@@ -193,7 +214,7 @@ const Recipe = () => {
             </View>
             <View>
               <Text className="font-rubik text-lg text-black-200">
-                {recipe?.servings} servings
+                {recipe?.servings + " servings"}
               </Text>
             </View>
           </View>
@@ -253,7 +274,9 @@ const Recipe = () => {
             </SignedIn>
             <View className="mt-4">
               <Text className="font-rubik text-lg text-black-200 text-center">
-                No Ratings to show
+                {isSignedIn
+                  ? "Be the first one to review"
+                  : "No Ratings to show"}
               </Text>
             </View>
             <View className="h-[2px] bg-black-200"></View>

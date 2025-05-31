@@ -9,7 +9,10 @@ import {
 import React from "react";
 import { useState } from "react";
 import { useColorScheme } from "nativewind";
+import { useUser } from "@clerk/clerk-expo";
+import axiosInstance from "@/utils/axios";
 import { useUserStore } from "@/zustand/store";
+import { router } from "expo-router";
 
 const dietaryOption = [
   "Vegan",
@@ -20,21 +23,14 @@ const dietaryOption = [
   "Keto",
   "Non-Veg",
 ];
-const cuisineOption = [
-  "Nepalese",
-  "Indian",
-  "Thai",
-  "Chinese",
-  "Mexican",
-  "Italian",
-  "Korean",
-];
 
-const dietaryPreference = () => {
+const DietaryPreference = () => {
   const [dietary, setDietary] = useState<string[]>([]);
-  const [cuisine, setCuisine] = useState<string[]>([]);
+  const [allergies, setAllergies] = useState<string[]>([]);
+  const [additionalDietary, setAdditionalDietary] = useState<string>("");
   const [allergiesInput, setAllergiesInput] = useState<string>("");
-  const { userData } = useUserStore();
+  const { user } = useUser();
+  const { setUserPreference } = useUserStore();
 
   const handleDietary = (option: string) => {
     if (dietary.includes(option)) {
@@ -45,17 +41,41 @@ const dietaryPreference = () => {
     }
   };
 
-  const handleCuisine = (option: string) => {
-    if (cuisine.includes(option)) {
-      const newCuisine = cuisine.filter((opt) => opt !== option);
-      setCuisine(newCuisine);
-    } else {
-      setCuisine([...cuisine, option]);
+  const handlePreference = async () => {
+    if (additionalDietary.trim() !== "") {
+      const rest = additionalDietary.split(", ").map((item) => item.trim());
+      setDietary([...dietary, ...rest]);
+    }
+    if (allergiesInput.trim() !== "") {
+      setAllergies(allergiesInput.split(",").map((item) => item.trim()));
+    }
+    try {
+      const response = await axiosInstance.post("/preference", {
+        clerkId: user?.id,
+        dietaryPreference: dietary,
+        allergies,
+      });
+      setUserPreference(response.data);
+      router.replace("/");
+    } catch (error) {
+      alert(
+        "An error occurred while saving your preferences. Please try again."
+      );
     }
   };
 
-  const handlePreference = () => {
-    console.log(userData);
+  const skipPreference = async () => {
+    try {
+      const response = await axiosInstance.post("/preference", {
+        clerkId: user?.id,
+        dietaryPreference: [],
+        allergies: [],
+      });
+      setUserPreference(response.data);
+      router.replace("/");
+    } catch (error) {
+      alert("An error occurred while skipping preferences. Please try again.");
+    }
   };
   return (
     <SafeAreaView className="w-full h-full  bg-white dark:bg-black-300">
@@ -74,7 +94,7 @@ const dietaryPreference = () => {
             <Text className="font-rubik-medium text-[1.2rem] dark:text-white ">
               Dietary Preference
             </Text>
-            <View className="flex-wrap flex-row">
+            <View className="flex flex-wrap flex-row">
               {dietaryOption.map((option) => (
                 <TouchableOpacity
                   key={option}
@@ -91,27 +111,9 @@ const dietaryPreference = () => {
                 </TouchableOpacity>
               ))}
             </View>
-          </View>
-          <View className="px-3 py-2 mb-5">
-            <Text className="font-rubik-medium text-[1.2rem] dark:text-white ">
-              Cuisine
-            </Text>
-            <View className="flex-wrap flex-row">
-              {cuisineOption.map((option) => (
-                <TouchableOpacity
-                  key={option}
-                  className={`flex-row  items-center justify-center border rounded-[25px] m-[5px] p-[10px] ${
-                    cuisine.includes(option)
-                      ? "border-white"
-                      : "border-black-200"
-                  } min-w-[100px] `}
-                  onPress={() => handleCuisine(option)}
-                >
-                  <Text className="font-rubik text-[1rem] text-black-200">
-                    {option}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+            <View>
+              <Text className="font-rubik text-black-200">Any Others?</Text>
+              <TextInput className="border border-black-200 text-black-200 p-2 m-2 rounded-xl text-lg" />
             </View>
           </View>
           <View className="px-3 py-2 mb-5">
@@ -122,7 +124,7 @@ const dietaryPreference = () => {
               className="border border-black-200 text-black-200 p-2 m-2 rounded-xl text-lg"
               value={allergiesInput}
               onChangeText={(text) => setAllergiesInput(text)}
-              placeholder="Strawberry, Walnuts"
+              placeholder="Strawberry, peanuts"
               placeholderTextColor={"#666876"}
             />
           </View>
@@ -130,7 +132,7 @@ const dietaryPreference = () => {
       </ScrollView>
       <View className="flex flex-row justify-between items-center p-5">
         <View>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={skipPreference}>
             <Text className="font-rubik text-black-300 dark:text-white underline">
               Skip
             </Text>
@@ -149,4 +151,4 @@ const dietaryPreference = () => {
   );
 };
 
-export default dietaryPreference;
+export default DietaryPreference;

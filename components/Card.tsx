@@ -9,11 +9,10 @@ interface Props {
 }
 
 const Card = ({ recipe }: Props) => {
-  const screenWidth = Dimensions.get("window").width;
   return (
-    <View key={recipe._id} style={{ width: screenWidth * 0.45 }}>
+    <View key={recipe._id} className="size-[180px]">
       <TouchableOpacity
-        className="flex items-start relative bg-white rounded-[10px] mr-4 shadow-card overflow-hidden dark:bg-black-200"
+        className="flex items-start relative bg-white rounded-[10px] shadow-card overflow-hidden dark:bg-black-200"
         onPress={() => {
           router.push(`/recipe/${recipe._id}`);
         }}
