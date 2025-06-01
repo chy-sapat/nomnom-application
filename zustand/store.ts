@@ -25,7 +25,9 @@ export const useRecipeStore = create<RecipeStore>((set) => ({
   popularRecipes: [],
   recommendedRecipes: [],
   userRecipes: [],
+  topBreakfastRecipes: [],
 
+  setTopBreakfastRecipes: (recipes) => set({ topBreakfastRecipes: recipes }),
   setUserRecipes: (recipes) => set({ userRecipes: recipes }),
   setAllRecipes: (recipes) => set({ allRecipes: recipes }),
   setLatestRecipe: (recipes) => set({ latestRecipe: recipes }),
@@ -39,5 +41,6 @@ export const useRecipeStore = create<RecipeStore>((set) => ({
       popularRecipes: [],
       recommendedRecipes: [],
       userRecipes: [],
+      topBreakfastRecipes: [],
     }),
 }));

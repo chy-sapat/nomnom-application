@@ -18,7 +18,7 @@ interface Recipe {
   ratingCount?: number;
   views?: number;
   image: string;
-  ratings?: Array<string>;
+  ratings?: Array<Rating>;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -36,6 +36,8 @@ interface RecipeStore {
   popularRecipes: Recipe[];
   recommendedRecipes: Recipe[];
   userRecipes: Recipe[];
+  topBreakfastRecipes: Recipe[];
+  setTopBreakfastRecipes: (recipes: Recipe[]) => void;
 
   setAllRecipes: (recipes: Recipe[]) => void;
   setLatestRecipe: (recipes: Recipe[]) => void;
@@ -68,4 +70,10 @@ interface UserStore {
   setUser: (userData: User | null) => void;
   setUserPreference: (preference: UserPreference | null) => void;
   clearUserAll: () => void;
+}
+
+interface Rating {
+  userId: string;
+  rating: number;
+  comments?: string;
 }

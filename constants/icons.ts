@@ -10,7 +10,8 @@ import uploadImg from "@/assets/icons/upload.png";
 import threeDots from "@/assets/icons/three_dots.png";
 import notification from "@/assets/icons/bell.png";
 import star from "@/assets/icons/star.png";
-import halfStar from "@/assets/icons/rating.png";
+import halfStar from "@/assets/icons/halfStar.png";
+import emptyStar from "@/assets/icons/emptyStar.png";
 import filter from "@/assets/icons/filter.png";
 import backArrow from "@/assets/icons/back-arrow.png";
 import minus from "@/assets/icons/minus.png";
@@ -46,4 +47,5 @@ export default {
   edit,
   deleteIcon,
   layer,
+  emptyStar,
 };

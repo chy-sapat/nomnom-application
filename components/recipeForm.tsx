@@ -46,8 +46,8 @@ type RecipeCreateData = {
 
 const RecipeForm = ({
   loading,
-  mode = "create",
-  formTitle = "Create New Recipe",
+  mode,
+  formTitle,
   recipeData,
   onButtonClick,
 }: props) => {
@@ -65,7 +65,7 @@ const RecipeForm = ({
       color: "#666876",
     },
   });
-
+  console.log("Recipe Data", recipeData);
   const { isSignedIn } = useAuth();
   const [showTimer, setShowTimer] = useState(false);
 

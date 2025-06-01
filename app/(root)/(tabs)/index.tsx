@@ -21,37 +21,104 @@ import { SignedIn, SignedOut, useUser } from "@clerk/clerk-expo";
 import { useRecipeStore, useUserStore } from "@/zustand/store";
 import axios from "axios";
 import axiosInstance from "@/utils/axios";
+import Card from "@/components/Card";
 
 export default function Index() {
   const { colorScheme } = useColorScheme();
   const { user } = useUser();
-  const { latestRecipe, setLatestRecipe } = useRecipeStore();
+  const { userData } = useUserStore();
+  const {
+    latestRecipe,
+    recommendedRecipes,
+    topBreakfastRecipes,
+    setLatestRecipe,
+    setRecommendedRecipes,
+    setTopBreakfastRecipes,
+  } = useRecipeStore();
   const timeHour = new Date().getHours();
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => {
+    try {
+      // Fetch latest recipes
+      const latestResponse = await axiosInstance.get(
+        `/recipe/?latest=true&clerkId=${user?.id}`
+      );
+
+      // Fetch recommended recipes
+      const recommendedResponse = await axiosInstance.get(
+        `/recipe/recommendations/?clerkId=${user?.id}`
+      );
+
+      // Fetch top breakfast recipes
+      // const breakfastResponse = await axios.get(
+      //   `http://191.168.1.73:3000/api/v1/recipe/top?label=breakfast`
+      // );
+
+      // Handle latest recipes
+      if (latestResponse.status === 200) {
+        setLatestRecipe(latestResponse.data);
+      }
+
+      // Handle recommended recipes
+      if (recommendedResponse.status === 200) {
+        setRecommendedRecipes(recommendedResponse.data);
+        console.log(recommendedResponse.data);
+      }
+
+      // Handle top breakfast recipes
+      // if (breakfastResponse.status === 200) {
+      //   setTopBreakfastRecipes(breakfastResponse.data);
+      // }
+    } catch (error) {
+      console.log("Error fetching recipe data:", error);
+    } finally {
       setRefreshing(false);
-    }, 2000);
+    }
   }, []);
 
   useEffect(() => {
-    const fetchLatestRecipes = async () => {
+    const fetchAllRecipes = async () => {
       setLoading(true);
       try {
-        const response = await axiosInstance.get(
+        // Fetch latest recipes
+        const latestResponse = await axiosInstance.get(
           `/recipe/?latest=true&clerkId=${user?.id}`
         );
-        console.log(response.data);
-        setLatestRecipe(response.data);
+
+        // Fetch recommended recipes
+        // const recommendedResponse = await axios.get(
+        //   `http://192.168.1.73:3000/api/v1/recipe/recommendations/?clerkId=${user?.id}`
+        // );
+
+        // Fetch top breakfast recipes
+        // const breakfastResponse = await axios.get(
+        //   `http://191.168.1.73:3000/api/v1/recipe/top?label=breakfast`
+        // );
+
+        // Handle latest recipes
+        if (latestResponse.status === 200) {
+          setLatestRecipe(latestResponse.data);
+        }
+
+        // Handle recommended recipes
+        // if (recommendedResponse.status === 200) {
+        //   setRecommendedRecipes(recommendedResponse.data);
+        //   console.log(recommendedResponse.data);
+        // }
+
+        // Handle top breakfast recipes
+        // if (breakfastResponse.status === 200) {
+        //   setTopBreakfastRecipes(breakfastResponse.data);
+        // }
       } catch (error) {
-        console.log(error);
+        console.log("Error fetching recipe data:", error);
       } finally {
         setLoading(false);
       }
     };
-    if (latestRecipe.length === 0) fetchLatestRecipes();
+    if (latestRecipe.length === 0) fetchAllRecipes();
   }, []);
   return (
     <SafeAreaView className="w-full h-full bg-white dark:bg-black-300 relative">
@@ -82,7 +149,9 @@ export default function Index() {
                 <Text className="font-rubik text-white">Chef</Text>
               </SignedOut>
             </View>
-            <TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push("/notification/notification")}
+            >
               <Image
                 source={icons.notification}
                 className="size-8"
@@ -126,24 +195,28 @@ export default function Index() {
             </View>
           ) : (
             <>
-              <CardGroup
+              {/* <CardGroup
                 title="Top Breakfast Recipes"
-                data={recipes.slice(0, 5)}
-              />
-              <CardGroup
-                title="Latest Recipes"
-                data={
-                  latestRecipe.length > 5
-                    ? latestRecipe.slice(0, 5)
-                    : latestRecipe
-                }
+                data={latestRecipe.slice(9, 5)}
               />
               <SignedIn>
                 <CardGroup
                   title="Recommended For You"
-                  data={recipes.slice(0, 5)}
+                  data={latestRecipe.slice(5, 5)}
                 />
-              </SignedIn>
+              </SignedIn> */}
+              <View className="py-2">
+                <View className="flex flex-row items-center justify-between mb-4">
+                  <Text className="font-rubik-semibold text-xl text-black-200 dark:text-white">
+                    Latest Recipes
+                  </Text>
+                </View>
+                <View className="flex flex-row flex-wrap justify-center gap-4">
+                  {latestRecipe.map((recipe) => (
+                    <Card key={recipe._id} recipe={recipe} />
+                  ))}
+                </View>
+              </View>
             </>
           )}
         </ScrollView>

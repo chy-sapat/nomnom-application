@@ -6,9 +6,6 @@ import Card from "@/components/Card";
 import axios from "axios";
 import { useDebounce } from "@/hooks/useDebounce";
 import axiosInstance from "@/utils/axios";
-import { router } from "expo-router";
-import CardGroup from "@/components/CardGroup";
-import { recipes as dummy } from "@/constants/data";
 
 const Explore = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -101,7 +98,7 @@ const Explore = () => {
                 </Text>
               )}
             </View>
-            <CardGroup title="Popular Recipes" data={dummy.slice(0, 5)} />
+            {/* <CardGroup title="Popular Recipes" data={dummy.slice(0, 5)} /> */}
           </View>
         ) : (
           <View className="flex gap-4 px-4 py-2">

@@ -20,19 +20,26 @@ import CardGroup from "@/components/CardGroup";
 import axiosInstance from "@/utils/axios";
 import { useUserStore } from "@/zustand/store";
 import { useColorScheme } from "nativewind";
+import {
+  InteractiveStarRating,
+  StaticStarRating,
+} from "@/components/starRating";
+import { SignedIn, useAuth, useUser } from "@clerk/clerk-expo";
 import axios from "axios";
-import { Rating, AirbnbRating } from "@rneui/themed";
-import { SignedIn, useAuth } from "@clerk/clerk-expo";
 
 const Recipe = () => {
   const [loading, setLoading] = useState(true);
+  const [reviewSubmitLoading, setReviewSubmitLoading] = useState(false);
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [similarRecipe, setSimilarRecipe] = useState<Recipe[]>([]);
   const { userData } = useUserStore();
-  const { isSignedIn } = useAuth();
+  const { user, isSignedIn } = useUser();
   const { colorScheme } = useColorScheme();
   const { id } = useLocalSearchParams<{ id?: string }>();
+  const [myReview, setMyReview] = useState<Rating | null>(null);
   const [rating, setRating] = useState(0);
+  const [myComment, setMyComment] = useState("");
+  const [editReview, setEditReview] = useState(false);
   const timeDisplay =
     recipe?.cookTime! / 60 > 1
       ? `${Math.floor(recipe?.cookTime! / 60)} hr ${recipe?.cookTime! % 60} min`
@@ -82,6 +89,74 @@ const Recipe = () => {
     }
   };
 
+  const handleReviewSubmit = async () => {
+    setMyReview({ userId: userData?._id!, rating, comments: myComment });
+    setReviewSubmitLoading(true);
+    try {
+      const response = await axiosInstance.post(
+        `/ratings/${recipe?._id}/rate`,
+        {
+          userId: userData?._id,
+          rating,
+          comments: myComment,
+        }
+      );
+      if (response.status === 200) {
+        ToastAndroid.show("Review submitted successfully", ToastAndroid.LONG);
+        setRecipe(response.data.recipe);
+      }
+    } catch (error: any) {
+      console.log(error);
+      const message =
+        error.response?.data?.message || "Something went wrong...";
+      Alert.alert("Error", message);
+    } finally {
+      setEditReview(false);
+      setReviewSubmitLoading(false);
+    }
+  };
+
+  const handleReviewDelete = () => {
+    Alert.alert(
+      "Delete Review",
+      "Are you sure you want to delete your review?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          onPress: async () => {
+            try {
+              const response = await axiosInstance.delete(
+                `/ratings/${recipe?._id}/rate/${userData?._id}`
+              );
+              if (response.status === 200) {
+                ToastAndroid.show(
+                  "Review deleted successfully",
+                  ToastAndroid.LONG
+                );
+                setRecipe(response.data.recipe);
+                setMyReview(null);
+                setRating(0);
+                setMyComment("");
+              }
+            } catch (error: any) {
+              console.log(error);
+              const message =
+                error.response?.data?.message || "Something went wrong...";
+              Alert.alert("Error", message);
+            } finally {
+              setEditReview(false);
+              setReviewSubmitLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   useEffect(() => {
     const fetchRecipe = async () => {
       setLoading(true);
@@ -89,6 +164,15 @@ const Recipe = () => {
         const response = await axiosInstance.get(`/recipe/${id}`);
         setRecipe(response.data.recipe);
         setSimilarRecipe(response.data.similar);
+
+        const existingReview = response.data.recipe.ratings.find(
+          (review: Rating) => review.userId === userData?._id
+        );
+        if (existingReview) {
+          setMyReview(existingReview);
+          setRating(existingReview.rating);
+          setMyComment(existingReview.comments);
+        }
       } catch (error) {
         Alert.alert(
           "",
@@ -178,18 +262,6 @@ const Recipe = () => {
                 {recipe?.author.fullname}
               </Text>
             </View>
-            {recipe?.averageRating && (
-              <View className="flex flex-row items-center gap-2 bg-black-100/80 px-2 rounded-full py-2">
-                <Image
-                  source={icons.star}
-                  className="size-6"
-                  tintColor={"#FFDE21"}
-                />
-                <Text className="font-rubik text-xl">
-                  {recipe?.averageRating}
-                </Text>
-              </View>
-            )}
           </View>
           {recipe?.description && (
             <Text className="py-4 font-rubik text-xl text-black-200">
@@ -214,7 +286,7 @@ const Recipe = () => {
             </View>
             <View>
               <Text className="font-rubik text-lg text-black-200">
-                {recipe?.servings + " servings"}
+                {`${recipe?.servings} serving`}
               </Text>
             </View>
           </View>
@@ -237,49 +309,185 @@ const Recipe = () => {
               </Text>
               <View className="flex gap-8">
                 {recipe?.directions.map((item, index) => (
-                  <View key={index} className="flex gap-4 items-start">
-                    <Text className="px-6 py-2 text-center font-rubik-medium text-lg bg-black-100 text-white rounded-full">
-                      {`Step ${index + 1}`}
-                    </Text>
-                    <Text className="font-rubik text-xl text-black-200">
+                  <View key={index} className="flex flex-row gap-4 items-start">
+                    <View className="size-10 flex justify-center items-center bg-black-100 rounded-full">
+                      <Text className="font-rubik-medium text-lg text-white">
+                        {`${index + 1}`}
+                      </Text>
+                    </View>
+                    <Text className="font-rubik flex-1 text-xl text-black-200 dark:text-white">
                       {item}
                     </Text>
                   </View>
                 ))}
               </View>
             </View>
-            <SignedIn>
-              <View>
-                <Text className="font-rubik-medium text-2xl text-black-100 dark:text-white">
-                  Ratings
-                </Text>
-                <View className="flex gap-4">
-                  <Rating
-                    showRating
-                    imageSize={20}
-                    startingValue={rating}
-                    onFinishRating={(rating: number) => setRating(rating)}
-                    style={{
-                      paddingVertical: 10,
-                      backgroundColor: "#191d31",
-                    }}
-                  />
-                  <TextInput
-                    className="min-h-[100px] border rounded-2xl border-black-100 px-3 py-3 align-top text-black-200 font-rubik dark:text-white"
-                    placeholder="What do you think about this recipe?"
-                    placeholderTextColor={"#666876"}
-                  />
-                </View>
-              </View>
-            </SignedIn>
-            <View className="mt-4">
-              <Text className="font-rubik text-lg text-black-200 text-center">
-                {isSignedIn
-                  ? "Be the first one to review"
-                  : "No Ratings to show"}
+            <View>
+              <Text className="font-rubik-medium text-2xl text-black-100 dark:text-white">
+                Reviews
               </Text>
+              <View className="py-4 flex gap-2 items-center">
+                <Text className="font-rubik text-lg mb-4 text-black-200">
+                  Overall Rating
+                </Text>
+                <View className="flex flex-row items-center gap-2">
+                  <Text className="font-rubik-medium text-7xl text-center text-black-200 dark:text-white">
+                    {recipe?.averageRating?.toFixed(1)}
+                  </Text>
+                  <Text className="font-rubik text-sm text-black-200 dark:text-white">
+                    / 5
+                  </Text>
+                </View>
+                <StaticStarRating
+                  rating={recipe?.averageRating!}
+                  size={"large"}
+                />
+                <Text className="font-rubik text-sm text-center text-black-200 dark:text-white">
+                  {`(${recipe?.ratings?.length} reviews)`}
+                </Text>
+              </View>
+              <SignedIn>
+                {userData?._id !== recipe?.author._id && (
+                  <View className="flex gap-4 border border-black-200 rounded-xl px-4 py-6">
+                    <Text className="font-rubik text-xl text-black-200 dark:text-white">
+                      Your Feedback
+                    </Text>
+                    {myReview && !editReview ? (
+                      <View>
+                        <View className="w-full flex gap-4 p-4 items-start">
+                          <View className="flex flex-row items-center gap-4">
+                            <Image
+                              source={{ uri: user?.imageUrl || icons.profile }}
+                              className="size-12 rounded-full border border-black-200 dark:border-white"
+                            />
+                            <View className="flex-1 flex gap-2">
+                              <View className="flex flex-row items-center gap-2">
+                                <Text className="font-rubik-medium text-lg text-black-200 dark:text-white">
+                                  {user?.fullName}
+                                </Text>
+                                <Text className="font-rubik text-sm text-black-200">{`1 min ago`}</Text>
+                                <View className="flex-1 flex-row justify-end gap-4">
+                                  <TouchableOpacity
+                                    onPress={() => setEditReview(true)}
+                                  >
+                                    <Image
+                                      source={icons.edit}
+                                      className="size-4"
+                                      tintColor={
+                                        colorScheme === "light"
+                                          ? "#191831"
+                                          : "#ffffff"
+                                      }
+                                    />
+                                  </TouchableOpacity>
+                                  <TouchableOpacity
+                                    onPress={handleReviewDelete}
+                                  >
+                                    <Image
+                                      source={icons.deleteIcon}
+                                      className="size-4"
+                                      tintColor={
+                                        colorScheme === "light"
+                                          ? "#191831"
+                                          : "#ffffff"
+                                      }
+                                    />
+                                  </TouchableOpacity>
+                                </View>
+                              </View>
+                              <StaticStarRating
+                                rating={myReview.rating}
+                                size="small"
+                              />
+                            </View>
+                          </View>
+                          {myReview?.comments!.trim() !== "" && (
+                            <Text className="font-rubik text-lg text-black-200 text-wrap text-justify dark:text-white">
+                              {myReview.comments}
+                            </Text>
+                          )}
+                        </View>
+                      </View>
+                    ) : (
+                      <View className="flex gap-4">
+                        <InteractiveStarRating
+                          rating={rating}
+                          setRating={setRating}
+                        />
+                        <TextInput
+                          className="min-h-[100px] border rounded-2xl border-black-100 px-3 py-3 align-top text-black-200 font-rubik dark:text-white"
+                          placeholder="What do you think about this recipe?"
+                          placeholderTextColor={"#666876"}
+                          value={myComment}
+                          onChangeText={(text) => setMyComment(text)}
+                        />
+                        <TouchableOpacity
+                          className="flex items-center w-full border border-primary-100 px-10 py-3 rounded-[10px] bg-primary-100"
+                          onPress={handleReviewSubmit}
+                        >
+                          {reviewSubmitLoading ? (
+                            <>
+                              <ActivityIndicator size="small" color="#ffffff" />
+                              <Text className="font-rubik-medium text-white ml-2">
+                                Submitting...
+                              </Text>
+                            </>
+                          ) : (
+                            <Text className="font-rubik-medium text-white">
+                              Submit Review
+                            </Text>
+                          )}
+                        </TouchableOpacity>
+                        {myReview && editReview && (
+                          <Text
+                            className="font-rubik text-lg text-black-200 dark:text-white text-center mt-2"
+                            onPress={() => setEditReview(false)}
+                          >
+                            Cancel
+                          </Text>
+                        )}
+                      </View>
+                    )}
+                  </View>
+                )}
+              </SignedIn>
             </View>
-            <View className="h-[2px] bg-black-200"></View>
+            <View className="my-4 flex gap-4">
+              <Text className="font-rubik-medium text-2xl text-black-200 dark:text-white">
+                Others Reviews
+              </Text>
+              {recipe?.ratingCount === 0 ? (
+                <Text className="font-rubik text-lg text-black-200 text-center">
+                  {isSignedIn
+                    ? "Be the first one to review"
+                    : "No Reviews to show"}
+                </Text>
+              ) : (
+                <View className="w-full flex gap-4 border border-black-200 rounded-xl p-4 items-start">
+                  <View className="flex flex-row items-center gap-4">
+                    <Image
+                      source={icons.profile}
+                      className="size-12"
+                      tintColor="#666876"
+                    />
+                    <View className="flex gap-2">
+                      <View className="flex flex-row items-center gap-2">
+                        <Text className="font-rubik-medium text-lg text-black-200 dark:text-white">
+                          {`Author`}
+                        </Text>
+                        <Text className="font-rubik text-sm text-black-200">{`1 min ago`}</Text>
+                      </View>
+                      <StaticStarRating rating={3} size="small" />
+                    </View>
+                  </View>
+                  <Text className="font-rubik text-lg text-black-200 text-wrap text-justify dark:text-white">
+                    {
+                      "Lorem ipsum dolor sit amet consectetur adipisicing elit.Consectetur, optio?"
+                    }
+                  </Text>
+                </View>
+              )}
+            </View>
             <CardGroup title="Similar Recipes" data={similarRecipe} />
           </View>
         </View>

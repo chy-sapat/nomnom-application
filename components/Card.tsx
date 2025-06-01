@@ -19,20 +19,23 @@ const Card = ({ recipe }: Props) => {
       >
         <Image
           source={
-            recipe.image !== "default" ? { uri: recipe.image } : images.noodles
+            recipe.image === "default" ||
+            recipe.image === "default_recipe_image.jpeg"
+              ? images.noodles
+              : { uri: recipe.image }
           }
           className="w-full h-[8rem]"
           resizeMode="cover"
         />
         {recipe.averageRating! > 0 && (
-          <View className="flex flex-row items-center gap-1 px-1 py-0.5 bg-white/90 rounded-full absolute top-2 right-2">
+          <View className="flex flex-row items-center gap-1 px-2 py-1 bg-white/90 rounded-full absolute top-2 right-2">
             <Image
               source={icons.star}
               className="size-5"
               tintColor="#ffDE21"
             ></Image>
             <Text className="text-lg font-rubik-medium text-black-200">
-              {recipe.averageRating}
+              {recipe.averageRating?.toFixed(1)}
             </Text>
           </View>
         )}
